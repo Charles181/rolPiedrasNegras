@@ -1,0 +1,60 @@
+---
+import Navbar from "../components/Common/Navbar.astro";
+import Footer from "../components/Common/Footer.astro";
+import "../styles/global.css";
+
+interface Props {
+	title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<!doctype html>
+<html lang="es" class="h-full bg-gray-950">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="description" content="Comunidad de Rol de Mesa" />
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="generator" content={Astro.generator} />
+		<title>{title}</title>
+	</head>
+	<body
+		class="h-full flex flex-col text-slate-200 antialiased selection:bg-cyan-500 selection:text-white bg-slate-900"
+	>
+		<!-- Background texture/gradient -->
+		<div
+			class="fixed inset-0 -z-10 bg-linear-to-b from-slate-900 via-slate-900 to-black"
+		>
+		</div>
+
+		<Navbar />
+		<main class="grow">
+			<slot />
+		</main>
+		<Footer />
+	</body>
+</html>
+
+<style is:global>
+	@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@400;600;700&display=swap");
+
+	:root {
+		--font-serif: "Cinzel", serif;
+		--font-sans: "Inter", sans-serif;
+	}
+
+	body {
+		font-family: var(--font-sans);
+	}
+
+	h1,
+	h2,
+	h3,
+	h4,
+	h5,
+	h6 {
+		font-family: var(--font-serif);
+	}
+</style>
