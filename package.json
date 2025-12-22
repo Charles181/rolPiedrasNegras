@@ -10,9 +10,16 @@
   },
   "dependencies": {
     "@astrojs/check": "^0.9.6",
+    "@astrojs/db": "^0.18.3",
     "@astrojs/netlify": "^6.6.3",
+    "@lucia-auth/adapter-drizzle": "^1.1.0",
+    "@node-rs/argon2": "^2.0.2",
     "@tailwindcss/vite": "^4.1.18",
+    "@types/bcrypt": "^6.0.0",
     "astro": "^5.16.6",
+    "bcrypt": "^6.0.0",
+    "better-auth": "^1.4.7",
+    "lucia": "^3.2.2",
     "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3"
   }

@@ -15,8 +15,7 @@ const links = [
       <div class="flex items-center gap-3">
         <a href="/" class="shrink-0">
           <img
-            class="h-10 w-10 object-contain"
-            style="height: 40px; width: 40px;"
+            class="h-16"
             src="/images/logo_pn.png"
             alt="Logo Comunidad Rolera"
           />
@@ -26,8 +25,8 @@ const links = [
           >Juegos de Rol Piedras Negras</span
         >
       </div>
-      <div class="hidden md:block">
-        <div class="ml-10 flex items-baseline space-x-4">
+      <div class="hidden md:block" id="navbar">
+        <div class="ml-10 lg:flex items-baseline space-x-2 md:space-x-4">
           {
             links.map((link) => (
               <a
@@ -40,7 +39,7 @@ const links = [
           }
         </div>
       </div>
-      <div class="hidden md:block">
+      <div class="md:block">
         <div class="ml-4 flex items-center md:ml-6 gap-2">
           <a
             href="/login"
@@ -58,6 +57,7 @@ const links = [
         <!-- Mobile menu button -->
         <button
           type="button"
+          id="mobile-menu-button"
           class="bg-slate-800 inline-flex items-center justify-center p-2 rounded-md text-slate-400 hover:text-white hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-white"
         >
           <span class="sr-only">Abrir menú</span>
@@ -79,4 +79,13 @@ const links = [
       </div>
     </div>
   </div>
+  <script>
+    const navbar = document.getElementById("navbar");
+    const menu = document.getElementById("mobile-menu-button");
+    function toggleMobileMenu() {
+      navbar?.classList.toggle("translate-y-0");
+      navbar?.classList.toggle("hidden");
+    }
+    menu?.addEventListener("click", toggleMobileMenu);
+  </script>
 </nav>

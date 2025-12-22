@@ -1,0 +1,247 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+// If user is already logged in, redirect to home
+if (Astro.locals.session) {
+    return Astro.redirect("/");
+}
+---
+
+<Layout title="Registrarse">
+    <div class="flex items-center justify-center min-h-screen py-12 px-4">
+        <div class="w-full max-w-md">
+            <div
+                class="bg-slate-800 rounded-2xl shadow-xl border border-slate-700 p-8"
+            >
+                <!-- Header -->
+                <div class="text-center mb-8">
+                    <div
+                        class="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center"
+                    >
+                        <svg
+                            class="w-8 h-8 text-white"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
+                            ></path>
+                        </svg>
+                    </div>
+                    <h1 class="text-2xl font-bold text-white">Crear cuenta</h1>
+                    <p class="text-slate-400 mt-2">
+                        Únete a nuestra comunidad de rol
+                    </p>
+                </div>
+
+                <!-- Error Message -->
+                <div
+                    id="error-message"
+                    class="hidden bg-red-500/20 border border-red-500/50 text-red-300 px-4 py-3 rounded-lg mb-6 text-sm"
+                >
+                </div>
+
+                <!-- Success Message -->
+                <div
+                    id="success-message"
+                    class="hidden bg-green-500/20 border border-green-500/50 text-green-300 px-4 py-3 rounded-lg mb-6 text-sm"
+                >
+                </div>
+
+                <!-- Form -->
+                <form id="register-form" class="space-y-5">
+                    <!-- Name -->
+                    <div>
+                        <label
+                            class="block text-sm font-medium text-slate-300 mb-2"
+                            for="name"
+                        >
+                            Nombre
+                        </label>
+                        <input
+                            type="text"
+                            id="name"
+                            name="name"
+                            required
+                            minlength="2"
+                            placeholder="Tu nombre"
+                            class="w-full px-4 py-3 bg-slate-700 text-white border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-slate-400 transition-all"
+                        />
+                    </div>
+
+                    <!-- Email -->
+                    <div>
+                        <label
+                            class="block text-sm font-medium text-slate-300 mb-2"
+                            for="email"
+                        >
+                            Email
+                        </label>
+                        <input
+                            type="email"
+                            id="email"
+                            name="email"
+                            required
+                            placeholder="tu@email.com"
+                            class="w-full px-4 py-3 bg-slate-700 text-white border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-slate-400 transition-all"
+                        />
+                    </div>
+
+                    <!-- Password -->
+                    <div>
+                        <label
+                            class="block text-sm font-medium text-slate-300 mb-2"
+                            for="password"
+                        >
+                            Contraseña
+                        </label>
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            required
+                            minlength="8"
+                            placeholder="Mínimo 8 caracteres"
+                            class="w-full px-4 py-3 bg-slate-700 text-white border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-slate-400 transition-all"
+                        />
+                    </div>
+
+                    <!-- Confirm Password -->
+                    <div>
+                        <label
+                            class="block text-sm font-medium text-slate-300 mb-2"
+                            for="confirmPassword"
+                        >
+                            Confirmar contraseña
+                        </label>
+                        <input
+                            type="password"
+                            id="confirmPassword"
+                            name="confirmPassword"
+                            required
+                            minlength="8"
+                            placeholder="Repite tu contraseña"
+                            class="w-full px-4 py-3 bg-slate-700 text-white border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-slate-400 transition-all"
+                        />
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button
+                        type="submit"
+                        id="submit-btn"
+                        class="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-lg transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <span id="btn-text">Crear cuenta</span>
+                        <svg
+                            id="btn-spinner"
+                            class="hidden animate-spin h-5 w-5"
+                            viewBox="0 0 24 24"
+                        >
+                            <circle
+                                class="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                stroke-width="4"
+                                fill="none"></circle>
+                            <path
+                                class="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                        </svg>
+                    </button>
+                </form>
+
+                <!-- Links -->
+                <div class="mt-6 text-center">
+                    <p class="text-slate-400">
+                        ¿Ya tienes cuenta?{" "}
+                        <a
+                            href="/login"
+                            class="text-blue-400 hover:text-blue-300 font-medium hover:underline"
+                        >
+                            Inicia sesión
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</Layout>
+
+<script>
+    const form = document.getElementById("register-form") as HTMLFormElement;
+    const errorDiv = document.getElementById("error-message") as HTMLDivElement;
+    const successDiv = document.getElementById(
+        "success-message",
+    ) as HTMLDivElement;
+    const submitBtn = document.getElementById(
+        "submit-btn",
+    ) as HTMLButtonElement;
+    const btnText = document.getElementById("btn-text") as HTMLSpanElement;
+    const btnSpinner = document.getElementById("btn-spinner") as SVGElement;
+
+    form?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        // Reset messages
+        errorDiv.classList.add("hidden");
+        successDiv.classList.add("hidden");
+
+        // Show loading state
+        submitBtn.disabled = true;
+        btnText.textContent = "Creando cuenta...";
+        btnSpinner.classList.remove("hidden");
+
+        const formData = new FormData(form);
+
+        // Client-side validation
+        const password = formData.get("password") as string;
+        const confirmPassword = formData.get("confirmPassword") as string;
+
+        if (password !== confirmPassword) {
+            errorDiv.textContent = "Las contraseñas no coinciden";
+            errorDiv.classList.remove("hidden");
+            submitBtn.disabled = false;
+            btnText.textContent = "Crear cuenta";
+            btnSpinner.classList.add("hidden");
+            return;
+        }
+
+        try {
+            const response = await fetch("/api/auth/register", {
+                method: "POST",
+                body: formData,
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                successDiv.textContent =
+                    data.message || "¡Cuenta creada exitosamente!";
+                successDiv.classList.remove("hidden");
+
+                // Redirect after short delay
+                setTimeout(() => {
+                    window.location.href = data.redirectUrl || "/";
+                }, 1000);
+            } else {
+                errorDiv.textContent = data.error || "Error al crear la cuenta";
+                errorDiv.classList.remove("hidden");
+            }
+        } catch (error) {
+            errorDiv.textContent = "Error de conexión. Intenta de nuevo.";
+            errorDiv.classList.remove("hidden");
+        } finally {
+            submitBtn.disabled = false;
+            btnText.textContent = "Crear cuenta";
+            btnSpinner.classList.add("hidden");
+        }
+    });
+</script>

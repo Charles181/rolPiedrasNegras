@@ -1,0 +1,113 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+// If user is already logged in, redirect to admin
+if (Astro.locals.session) {
+  return Astro.redirect("/admin");
+}
+---
+
+<Layout title="Login">
+  <div class="flex items-center justify-center min-h-screen bg-slate-900">
+    <div
+      class="absolute inset-0 bg-contain lg:bg-cover bg-center bg-no-repeat opacity-50"
+      style="background-image: url('/images/login_bg.png');"
+    >
+    </div>
+    <div
+      class="relative z-10 px-8 py-6 mt-4 text-left bg-slate-800 shadow-lg rounded-2xl w-full max-w-md opacity-70 lg:opacity-90"
+    >
+      <h3 class="text-2xl font-bold text-center text-white mb-6">
+        Inicia sesión
+      </h3>
+
+      <div
+        id="error-message"
+        class="hidden bg-red-500/20 border border-red-500 text-red-300 px-4 py-2 rounded mb-4"
+      >
+      </div>
+
+      <form id="login-form">
+        <div class="mt-4">
+          <div>
+            <label class="block text-gray-300" for="email">Email</label>
+            <input
+              type="email"
+              placeholder="Email"
+              name="email"
+              id="email"
+              required
+              class="w-full px-4 py-2 mt-2 bg-slate-700 text-white border border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div class="mt-4">
+            <label class="block text-gray-300">Contraseña</label>
+            <input
+              type="password"
+              placeholder="Contraseña"
+              name="password"
+              id="password"
+              required
+              class="w-full px-4 py-2 mt-2 bg-slate-700 text-white border border-slate-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div class="flex items-center justify-between mt-6">
+            <button
+              type="submit"
+              id="submit-btn"
+              class="px-6 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Iniciar sesión
+            </button>
+            <a
+              href="/forgot-password"
+              class="text-sm text-blue-400 hover:text-blue-300 hover:underline"
+            >
+              ¿Olvidaste tu contraseña?
+            </a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  const form = document.getElementById("login-form") as HTMLFormElement;
+  const errorDiv = document.getElementById("error-message") as HTMLDivElement;
+  const submitBtn = document.getElementById("submit-btn") as HTMLButtonElement;
+
+  form?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    // Reset error state
+    errorDiv.classList.add("hidden");
+    errorDiv.textContent = "";
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Iniciando sesión...";
+
+    const formData = new FormData(form);
+
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        window.location.href = data.redirectUrl || "/admin";
+      } else {
+        errorDiv.textContent = data.error || "Error al iniciar sesión";
+        errorDiv.classList.remove("hidden");
+      }
+    } catch (error) {
+      errorDiv.textContent = "Error de conexión. Intenta de nuevo.";
+      errorDiv.classList.remove("hidden");
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Iniciar sesión";
+    }
+  });
+</script>
