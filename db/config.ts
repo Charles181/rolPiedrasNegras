@@ -61,8 +61,24 @@ export const Campaign = defineTable({
     id: column.text({ primaryKey: true }),
     name: column.text(),
     description: column.text(),
+    system: column.text({ optional: true }),
+    nextSession: column.date({ optional: true }),
+    totalSeats: column.number({ default: 0 }),
+    masterId: column.text({ references: () => User.columns.id, default: 'Nano' }), // Creator/Master
+    status: column.text({ default: 'ongoing' }), // ongoing, finished
     createdAt: column.date({ default: new Date() }),
     updatedAt: column.date({ default: new Date() }),
+  }
+});
+
+export const CampaignParticipant = defineTable({
+  columns: {
+    id: column.text({ primaryKey: true }),
+    campaignId: column.text({ references: () => Campaign.columns.id }),
+    userId: column.text({ references: () => User.columns.id }),
+    status: column.text({ default: 'active' }), // active, invited, requested
+    role: column.text({ default: 'player' }), // player, master? (Master is usually defined in Campaign, but maybe co-masters?)
+    createdAt: column.date({ default: new Date() }),
   }
 });
 
@@ -96,6 +112,7 @@ export default defineDb({
     Account,
     Verification,
     Campaign,
+    CampaignParticipant,
     Event,
     Post
   }

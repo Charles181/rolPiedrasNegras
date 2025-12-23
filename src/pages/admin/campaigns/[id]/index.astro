@@ -1,0 +1,484 @@
+---
+import AdminLayout from "../../../../layouts/AdminLayout.astro";
+import { db, Campaign, User, CampaignParticipant, eq, and, ne } from "astro:db";
+
+const { user } = Astro.locals;
+const { id } = Astro.params;
+
+if (!user) return Astro.redirect("/");
+
+// Fetch Campaign
+const campaign = await db
+    .select()
+    .from(Campaign)
+    .where(eq(Campaign.id, id))
+    .get();
+if (!campaign) return Astro.redirect("/admin/campaigns");
+
+// Verify permission
+if (user.role !== "admin" && campaign.masterId !== user.id) {
+    return Astro.redirect("/admin/campaigns");
+}
+
+// Fetch Participants
+const participantsRaw = await db
+    .select()
+    .from(CampaignParticipant)
+    .innerJoin(User, eq(CampaignParticipant.userId, User.id))
+    .where(eq(CampaignParticipant.campaignId, id));
+
+const participants = participantsRaw.map(
+    ({ CampaignParticipant: cp, User: u }) => ({
+        ...u,
+        participantId: cp.id,
+        status: cp.status,
+        role: cp.role,
+        joinedAt: cp.createdAt,
+    }),
+);
+
+const activePlayers = participants.filter((p) => p.status === "active");
+const pendingInvites = participants.filter((p) => p.status === "invited");
+const joinRequests = participants.filter((p) => p.status === "requested");
+
+// Fetch potential users to invite (simple: all users not in participants)
+// In a real app with many users, this should be an autocomplete API.
+// For now, fetch all and filter client side or server side if small.
+const allUsers = await db.select().from(User);
+const participantIds = new Set(participants.map((p) => p.id));
+const availableUsers = allUsers.filter((u) => !participantIds.has(u.id));
+
+// Handle Actions
+let message = "";
+if (Astro.request.method === "POST") {
+    const formData = await Astro.request.formData();
+    const action = formData.get("action");
+
+    try {
+        if (action === "update") {
+            const name = formData.get("name") as string;
+            const description = formData.get("description") as string;
+            const system = formData.get("system") as string;
+            const nextSession = formData.get("nextSession") as string;
+            const status = formData.get("status") as string;
+            const totalSeats = parseInt(formData.get("totalSeats") as string);
+
+            await db
+                .update(Campaign)
+                .set({
+                    name,
+                    description,
+                    system,
+                    status,
+                    totalSeats,
+                    nextSession: nextSession ? new Date(nextSession) : null,
+                    updatedAt: new Date(),
+                })
+                .where(eq(Campaign.id, id));
+            message = "Campaña actualizada.";
+        } else if (action === "invite") {
+            const userId = formData.get("userId") as string;
+            if (userId) {
+                await db.insert(CampaignParticipant).values({
+                    id: crypto.randomUUID(),
+                    campaignId: id,
+                    userId,
+                    status: "invited",
+                    role: "player",
+                    createdAt: new Date(),
+                });
+                message = "Invitación enviada.";
+            }
+        } else if (
+            action === "kick" ||
+            action === "cancel_invite" ||
+            action === "reject_request"
+        ) {
+            const pId = formData.get("participantId") as string;
+            if (pId) {
+                await db
+                    .delete(CampaignParticipant)
+                    .where(eq(CampaignParticipant.id, pId));
+                message = "Usuario removido/rechazado.";
+            }
+        } else if (action === "accept_request") {
+            const pId = formData.get("participantId") as string;
+            if (pId) {
+                await db
+                    .update(CampaignParticipant)
+                    .set({ status: "active" })
+                    .where(eq(CampaignParticipant.id, pId));
+                message = "Solicitud aceptada.";
+            }
+        }
+
+        // Refresh page to show changes
+        return Astro.redirect(`/admin/campaigns/${id}`);
+    } catch (e) {
+        console.error(e);
+        message = "Error al procesar la acción.";
+    }
+}
+---
+
+<AdminLayout title={`Editar: ${campaign.name}`}>
+    <div class="max-w-6xl mx-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold font-serif text-white">
+                Administrar Campaña
+            </h1>
+            <a href="/admin/campaigns" class="text-slate-400 hover:text-white"
+                >← Volver</a
+            >
+        </div>
+
+        {
+            message && (
+                <div class="bg-cyan-900/50 text-cyan-200 p-4 rounded mb-6 border border-cyan-500/30">
+                    {message}
+                </div>
+            )
+        }
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left: Edit Details -->
+            <div class="lg:col-span-2 space-y-8">
+                <div
+                    class="bg-slate-800 rounded-lg p-6 border border-slate-700"
+                >
+                    <h2 class="text-xl font-bold text-white mb-4">
+                        Detalles de la Campaña
+                    </h2>
+                    <form method="POST" class="space-y-4">
+                        <input type="hidden" name="action" value="update" />
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="col-span-2">
+                                <label class="block text-sm text-slate-400"
+                                    >Nombre</label
+                                >
+                                <input
+                                    type="text"
+                                    name="name"
+                                    value={campaign.name}
+                                    class="w-full bg-slate-900 border-slate-600 rounded text-white px-3 py-2"
+                                    required
+                                />
+                            </div>
+                            <div class="col-span-2">
+                                <label class="block text-sm text-slate-400"
+                                    >Descripción</label
+                                >
+                                <textarea
+                                    name="description"
+                                    rows="3"
+                                    class="w-full bg-slate-900 border-slate-600 rounded text-white px-3 py-2"
+                                    required>{campaign.description}</textarea
+                                >
+                            </div>
+                            <div>
+                                <label class="block text-sm text-slate-400"
+                                    >Sistema</label
+                                >
+                                <input
+                                    type="text"
+                                    name="system"
+                                    value={campaign.system}
+                                    class="w-full bg-slate-900 border-slate-600 rounded text-white px-3 py-2"
+                                />
+                            </div>
+                            <div>
+                                <label class="block text-sm text-slate-400"
+                                    >Estado</label
+                                >
+                                <select
+                                    name="status"
+                                    class="w-full bg-slate-900 border-slate-600 rounded text-white px-3 py-2"
+                                >
+                                    <option
+                                        value="ongoing"
+                                        selected={campaign.status === "ongoing"}
+                                        >En Curso</option
+                                    >
+                                    <option
+                                        value="finished"
+                                        selected={campaign.status ===
+                                            "finished"}>Finalizada</option
+                                    >
+                                    <option
+                                        value="paused"
+                                        selected={campaign.status === "paused"}
+                                        >Pausada</option
+                                    >
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-slate-400"
+                                    >Plazas Totales</label
+                                >
+                                <input
+                                    type="number"
+                                    name="totalSeats"
+                                    value={campaign.totalSeats}
+                                    class="w-full bg-slate-900 border-slate-600 rounded text-white px-3 py-2"
+                                />
+                            </div>
+                            <div>
+                                <label class="block text-sm text-slate-400"
+                                    >Próxima Sesión</label
+                                >
+                                <input
+                                    type="datetime-local"
+                                    name="nextSession"
+                                    value={campaign.nextSession
+                                        ? new Date(campaign.nextSession)
+                                              .toISOString()
+                                              .slice(0, 16)
+                                        : ""}
+                                    class="w-full bg-slate-900 border-slate-600 rounded text-white px-3 py-2"
+                                />
+                            </div>
+                        </div>
+                        <div class="pt-4 flex justify-end">
+                            <button
+                                type="submit"
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-medium transition-colors"
+                                >Guardar Cambios</button
+                            >
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Participants List -->
+                <div
+                    class="bg-slate-800 rounded-lg p-6 border border-slate-700"
+                >
+                    <h2 class="text-xl font-bold text-white mb-4">
+                        Jugadores Activos ({activePlayers.length}/{
+                            campaign.totalSeats
+                        })
+                    </h2>
+                    {
+                        activePlayers.length > 0 ? (
+                            <div class="overflow-x-auto">
+                                <table class="w-full">
+                                    <thead class="text-xs text-slate-400 uppercase bg-slate-900/50">
+                                        <tr>
+                                            <th class="px-4 py-2 text-left">
+                                                Usuario
+                                            </th>
+                                            <th class="px-4 py-2 text-left">
+                                                Rol
+                                            </th>
+                                            <th class="px-4 py-2 text-right">
+                                                Acciones
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-700">
+                                        {activePlayers.map((p) => (
+                                            <tr>
+                                                <td class="px-4 py-3 flex items-center gap-2">
+                                                    {p.image ? (
+                                                        <img
+                                                            src={p.image}
+                                                            class="w-8 h-8 rounded-full"
+                                                        />
+                                                    ) : (
+                                                        <div class="w-8 h-8 rounded-full bg-slate-600 flex items-center justify-center font-bold text-xs">
+                                                            {p.name[0]}
+                                                        </div>
+                                                    )}
+                                                    <span>{p.name}</span>
+                                                </td>
+                                                <td class="px-4 py-3 text-sm text-slate-400 capitalize">
+                                                    {p.role}
+                                                </td>
+                                                <td class="px-4 py-3 text-right">
+                                                    <form
+                                                        method="POST"
+                                                        class="inline"
+                                                        onsubmit="return confirm('¿Expulsar jugador?');"
+                                                    >
+                                                        <input
+                                                            type="hidden"
+                                                            name="action"
+                                                            value="kick"
+                                                        />
+                                                        <input
+                                                            type="hidden"
+                                                            name="participantId"
+                                                            value={
+                                                                p.participantId
+                                                            }
+                                                        />
+                                                        <button
+                                                            type="submit"
+                                                            class="text-red-400 hover:text-red-300 text-sm"
+                                                        >
+                                                            Expulsar
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ) : (
+                            <p class="text-slate-400 italic">
+                                No hay jugadores activos aún.
+                            </p>
+                        )
+                    }
+                </div>
+            </div>
+
+            <!-- Right: Manage Invites/Requests -->
+            <div class="space-y-8">
+                <!-- Requests -->
+                <div
+                    class="bg-slate-800 rounded-lg p-6 border border-slate-700"
+                >
+                    <h2 class="text-xl font-bold text-white mb-4">
+                        Solicitudes de Ingreso ({joinRequests.length})
+                    </h2>
+                    {
+                        joinRequests.length > 0 ? (
+                            <ul class="space-y-4">
+                                {joinRequests.map((req) => (
+                                    <li class="bg-slate-900 p-3 rounded border border-slate-700">
+                                        <div class="flex items-center gap-2 mb-2">
+                                            {req.image ? (
+                                                <img
+                                                    src={req.image}
+                                                    class="w-8 h-8 rounded-full"
+                                                />
+                                            ) : (
+                                                <div class="w-8 h-8 rounded-full bg-slate-700" />
+                                            )}
+                                            <span class="font-medium text-white">
+                                                {req.name}
+                                            </span>
+                                        </div>
+                                        <div class="flex gap-2">
+                                            <form method="POST" class="flex-1">
+                                                <input
+                                                    type="hidden"
+                                                    name="action"
+                                                    value="accept_request"
+                                                />
+                                                <input
+                                                    type="hidden"
+                                                    name="participantId"
+                                                    value={req.participantId}
+                                                />
+                                                <button class="w-full bg-green-600 hover:bg-green-700 text-white text-xs py-1 rounded">
+                                                    Aceptar
+                                                </button>
+                                            </form>
+                                            <form method="POST" class="flex-1">
+                                                <input
+                                                    type="hidden"
+                                                    name="action"
+                                                    value="reject_request"
+                                                />
+                                                <input
+                                                    type="hidden"
+                                                    name="participantId"
+                                                    value={req.participantId}
+                                                />
+                                                <button class="w-full bg-red-600 hover:bg-red-700 text-white text-xs py-1 rounded">
+                                                    Rechazar
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p class="text-slate-400 text-sm">
+                                No hay solicitudes pendientes.
+                            </p>
+                        )
+                    }
+                </div>
+
+                <!-- Pending Invitations -->
+                <div
+                    class="bg-slate-800 rounded-lg p-6 border border-slate-700"
+                >
+                    <h2 class="text-xl font-bold text-white mb-4">
+                        Invitaciones Enviadas ({pendingInvites.length})
+                    </h2>
+                    {
+                        pendingInvites.length > 0 ? (
+                            <ul>
+                                {pendingInvites.map((inv) => (
+                                    <li class="flex justify-between items-center py-2 border-b border-slate-700 last:border-0">
+                                        <span class="text-sm text-slate-300">
+                                            {inv.name}
+                                        </span>
+                                        <form method="POST">
+                                            <input
+                                                type="hidden"
+                                                name="action"
+                                                value="cancel_invite"
+                                            />
+                                            <input
+                                                type="hidden"
+                                                name="participantId"
+                                                value={inv.participantId}
+                                            />
+                                            <button class="text-xs text-red-400 hover:text-red-300">
+                                                Cancelar
+                                            </button>
+                                        </form>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p class="text-slate-400 text-sm">
+                                No hay invitaciones pendientes.
+                            </p>
+                        )
+                    }
+                </div>
+
+                <!-- Invite New User -->
+                <div
+                    class="bg-slate-800 rounded-lg p-6 border border-slate-700"
+                >
+                    <h2 class="text-xl font-bold text-white mb-4">
+                        Invitar Jugador
+                    </h2>
+                    <form method="POST" class="space-y-3">
+                        <input type="hidden" name="action" value="invite" />
+                        <div>
+                            <label class="block text-sm text-slate-400 mb-1"
+                                >Seleccionar Usuario</label
+                            >
+                            <select
+                                name="userId"
+                                class="w-full bg-slate-900 border-slate-600 rounded text-white px-3 py-2 text-sm"
+                            >
+                                <option value="">-- Seleccionar --</option>
+                                {
+                                    availableUsers.map((u) => (
+                                        <option value={u.id}>
+                                            {u.name} ({u.email})
+                                        </option>
+                                    ))
+                                }
+                            </select>
+                        </div>
+                        <button
+                            type="submit"
+                            class="w-full bg-cyan-600 hover:bg-cyan-700 text-white py-2 rounded text-sm font-medium"
+                            >Enviar Invitación</button
+                        >
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</AdminLayout>

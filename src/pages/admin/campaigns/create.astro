@@ -1,0 +1,207 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { db, Campaign, User, eq, CampaignParticipant } from "astro:db";
+
+const { user } = Astro.locals;
+
+// Ensure strictly Master or Admin
+if (!user || (user.role !== "admin" && user.role !== "master")) {
+    return Astro.redirect("/");
+}
+
+// If Admin, fetch potential masters
+let masters = [];
+if (user.role === "admin") {
+    masters = await db.select().from(User).where(eq(User.role, "master"));
+    // Also include admins? Maybe.
+    const admins = await db.select().from(User).where(eq(User.role, "admin"));
+    masters = [...masters, ...admins];
+    // Remove duplicates if any
+    masters = masters.filter(
+        (v, i, a) => a.findIndex((t) => t.id === v.id) === i,
+    );
+}
+
+// Handle POST
+let error = "";
+if (Astro.request.method === "POST") {
+    const formData = await Astro.request.formData();
+    const name = formData.get("name") as string;
+    const description = formData.get("description") as string;
+    const system = formData.get("system") as string;
+    const nextSession = formData.get("nextSession") as string;
+    const totalSeats = parseInt(formData.get("totalSeats") as string) || 0;
+    const assignedMasterId = (formData.get("masterId") as string) || user.id;
+
+    if (!name || !description) {
+        error = "Nombre y descripción son obligatorios.";
+    } else {
+        try {
+            const campaignId = crypto.randomUUID();
+            await db.insert(Campaign).values({
+                id: campaignId,
+                name,
+                description,
+                system,
+                nextSession: nextSession ? new Date(nextSession) : null,
+                totalSeats,
+                masterId: assignedMasterId,
+                status: "ongoing",
+                createdAt: new Date(),
+                updatedAt: new Date(),
+            });
+
+            return Astro.redirect("/admin/campaigns");
+        } catch (e) {
+            console.error(e);
+            error = "Error al crear la campaña.";
+        }
+    }
+}
+---
+
+<AdminLayout title="Crear Campaña">
+    <div class="max-w-4xl mx-auto">
+        <div class="md:flex md:items-center md:justify-between mb-8">
+            <div class="min-w-0 flex-1">
+                <h2
+                    class="text-2xl font-bold leading-7 text-white sm:truncate sm:text-3xl sm:tracking-tight font-serif"
+                >
+                    Crear Nueva Campaña
+                </h2>
+            </div>
+        </div>
+
+        <div
+            class="bg-slate-800 rounded-lg shadow-xl border border-slate-700 p-6"
+        >
+            {
+                error && (
+                    <div class="bg-red-500/10 border border-red-500 text-red-500 p-4 rounded-md mb-6">
+                        {error}
+                    </div>
+                )
+            }
+
+            <form method="POST" class="space-y-6">
+                <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                    <div class="sm:col-span-2">
+                        <label
+                            for="name"
+                            class="block text-sm font-medium text-slate-300"
+                            >Nombre de la Campaña</label
+                        >
+                        <input
+                            type="text"
+                            name="name"
+                            id="name"
+                            required
+                            class="mt-1 block w-full rounded-md border-slate-600 bg-slate-900 text-white shadow-xs focus:border-cyan-500 focus:ring-cyan-500 sm:text-sm px-4 py-2"
+                        />
+                    </div>
+
+                    <div class="sm:col-span-2">
+                        <label
+                            for="description"
+                            class="block text-sm font-medium text-slate-300"
+                            >Descripción</label
+                        >
+                        <textarea
+                            name="description"
+                            id="description"
+                            rows="4"
+                            required
+                            class="mt-1 block w-full rounded-md border-slate-600 bg-slate-900 text-white shadow-xs focus:border-cyan-500 focus:ring-cyan-500 sm:text-sm px-4 py-2"
+                        ></textarea>
+                    </div>
+
+                    <div>
+                        <label
+                            for="system"
+                            class="block text-sm font-medium text-slate-300"
+                            >Sistema de Juego</label
+                        >
+                        <input
+                            type="text"
+                            name="system"
+                            id="system"
+                            placeholder="D&D 5e, Pathfinder, etc."
+                            class="mt-1 block w-full rounded-md border-slate-600 bg-slate-900 text-white shadow-xs focus:border-cyan-500 focus:ring-cyan-500 sm:text-sm px-4 py-2"
+                        />
+                    </div>
+
+                    <div>
+                        <label
+                            for="totalSeats"
+                            class="block text-sm font-medium text-slate-300"
+                            >Plazas Disponibles</label
+                        >
+                        <input
+                            type="number"
+                            name="totalSeats"
+                            id="totalSeats"
+                            min="1"
+                            class="mt-1 block w-full rounded-md border-slate-600 bg-slate-900 text-white shadow-xs focus:border-cyan-500 focus:ring-cyan-500 sm:text-sm px-4 py-2"
+                        />
+                    </div>
+
+                    <div>
+                        <label
+                            for="nextSession"
+                            class="block text-sm font-medium text-slate-300"
+                            >Próxima Sesión (Inicial)</label
+                        >
+                        <input
+                            type="datetime-local"
+                            name="nextSession"
+                            id="nextSession"
+                            class="mt-1 block w-full rounded-md border-slate-600 bg-slate-900 text-white shadow-xs focus:border-cyan-500 focus:ring-cyan-500 sm:text-sm px-4 py-2"
+                        />
+                    </div>
+
+                    {
+                        user.role === "admin" && (
+                            <div>
+                                <label
+                                    for="masterId"
+                                    class="block text-sm font-medium text-slate-300"
+                                >
+                                    Asignar Master
+                                </label>
+                                <select
+                                    name="masterId"
+                                    id="masterId"
+                                    class="mt-1 block w-full rounded-md border-slate-600 bg-slate-900 text-white shadow-xs focus:border-cyan-500 focus:ring-cyan-500 sm:text-sm px-4 py-2"
+                                >
+                                    {masters.map((m) => (
+                                        <option
+                                            value={m.id}
+                                            selected={m.id === user.id}
+                                        >
+                                            {m.name} ({m.email})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )
+                    }
+                </div>
+
+                <div
+                    class="flex justify-end gap-3 pt-6 border-t border-slate-700"
+                >
+                    <a
+                        href="/admin/campaigns"
+                        class="px-4 py-2 text-sm text-slate-300 hover:text-white"
+                        >Cancelar</a
+                    >
+                    <button
+                        type="submit"
+                        class="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-md text-sm font-medium shadow-lg shadow-cyan-900/20"
+                        >Crear Campaña</button
+                    >
+                </div>
+            </form>
+        </div>
+    </div>
+</AdminLayout>

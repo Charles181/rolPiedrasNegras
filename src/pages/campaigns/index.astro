@@ -1,0 +1,76 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { db, Campaign, eq, desc } from "astro:db";
+
+const campaigns = await db
+    .select()
+    .from(Campaign)
+    .where(eq(Campaign.status, "ongoing"))
+    .orderBy(desc(Campaign.createdAt));
+---
+
+<Layout title="Campañas Activas">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <h1 class="text-4xl font-bold text-white mb-2 font-serif text-center">
+            Campañas Activas
+        </h1>
+        <p class="text-slate-400 text-center mb-12 max-w-2xl mx-auto">
+            Explora las aventuras disponibles y únete a nosotros. Encuentra tu
+            próxima mesa de rol.
+        </p>
+
+        <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+            {
+                campaigns.map((c) => (
+                    <div class="bg-slate-800 rounded-xl overflow-hidden shadow-xl border border-slate-700 hover:border-cyan-500/50 transition-all duration-300 hover:transform hover:-translate-y-1 group">
+                        <div class="h-48 bg-linear-to-br from-slate-700 to-slate-800 relative">
+                            <div class="absolute inset-0 flex items-center justify-center text-6xl opacity-20 group-hover:opacity-30 transition-opacity">
+                                🎲
+                            </div>
+                            <div class="absolute bottom-0 left-0 right-0 p-4 bg-linear-to-t from-slate-900 to-transparent">
+                                <span class="text-xs font-bold px-2 py-1 rounded bg-cyan-900 text-cyan-200">
+                                    {c.system || "Rol General"}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="p-6">
+                            <h2 class="text-2xl font-bold text-white mb-2 font-serif">
+                                {c.name}
+                            </h2>
+                            <p class="text-slate-400 text-sm line-clamp-3 mb-4">
+                                {c.description}
+                            </p>
+
+                            <div class="flex items-center justify-between mt-4 pt-4 border-t border-slate-700">
+                                <div class="text-xs text-slate-500">
+                                    {c.nextSession
+                                        ? `Próxima: ${c.nextSession.toLocaleDateString()}`
+                                        : "Fecha por definir"}
+                                </div>
+                                <a
+                                    href={`/campaigns/${c.id}`}
+                                    class="text-cyan-400 font-medium hover:text-white transition-colors text-sm flex items-center gap-1"
+                                >
+                                    Ver Detalles{" "}
+                                    <span class="group-hover:translate-x-1 transition-transform">
+                                        →
+                                    </span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                ))
+            }
+        </div>
+
+        {
+            campaigns.length === 0 && (
+                <div class="text-center py-20">
+                    <p class="text-xl text-slate-500">
+                        No hay campañas activas en este momento.
+                    </p>
+                </div>
+            )
+        }
+    </div>
+</Layout>

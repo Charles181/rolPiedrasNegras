@@ -1,0 +1,306 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { db, Campaign, CampaignParticipant, User, eq, and } from "astro:db";
+
+const { id } = Astro.params;
+const { user } = Astro.locals;
+
+const campaign = await db
+    .select()
+    .from(Campaign)
+    .where(eq(Campaign.id, id))
+    .get();
+
+if (!campaign) return Astro.redirect("/campaigns");
+
+// Fetch Master info
+const master = await db
+    .select()
+    .from(User)
+    .where(eq(User.id, campaign.masterId))
+    .get();
+
+// Check participation status
+let status = null; // null, active, invited, requested
+let participantId = null;
+
+if (user) {
+    const participation = await db
+        .select()
+        .from(CampaignParticipant)
+        .where(
+            and(
+                eq(CampaignParticipant.campaignId, id),
+                eq(CampaignParticipant.userId, user.id),
+            ),
+        )
+        .get();
+
+    if (participation) {
+        status = participation.status;
+        participantId = participation.id;
+    }
+}
+
+// Logic for Request Join
+let message = "";
+if (user && Astro.request.method === "POST") {
+    const formData = await Astro.request.formData();
+    const action = formData.get("action");
+
+    if (action === "join_request") {
+        if (!status) {
+            await db.insert(CampaignParticipant).values({
+                id: crypto.randomUUID(),
+                campaignId: id,
+                userId: user.id,
+                status: "requested",
+                role: "player",
+                createdAt: new Date(),
+            });
+            status = "requested"; // optimistically update
+            message = "Solicitud enviada al Master.";
+        }
+    } else if (action === "cancel_request") {
+        if (status === "requested" && participantId) {
+            await db
+                .delete(CampaignParticipant)
+                .where(eq(CampaignParticipant.id, participantId));
+            status = null;
+            message = "Solicitud cancelada.";
+        }
+    }
+}
+---
+
+<Layout title={campaign.name}>
+    <div class="relative">
+        <!-- Hero Header -->
+        <div class="h-64 md:h-80 bg-slate-900 relative overflow-hidden">
+            <div
+                class="absolute inset-0 bg-linear-to-b from-transparent to-slate-900 z-10"
+            >
+            </div>
+            <div
+                class="absolute inset-0 flex items-center justify-center opacity-10"
+            >
+                <span class="text-9xl">🎲</span>
+            </div>
+
+            <div
+                class="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col justify-end pb-10"
+            >
+                <span
+                    class="text-cyan-400 font-bold mb-2 tracking-wider uppercase text-sm"
+                    >{campaign.system || "Sistema General"}</span
+                >
+                <h1
+                    class="text-4xl md:text-5xl font-bold text-white font-serif mb-4"
+                >
+                    {campaign.name}
+                </h1>
+                <div class="flex items-center gap-4 text-slate-300 text-sm">
+                    <div class="flex items-center gap-2">
+                        <span class="bg-slate-800 px-2 py-1 rounded"
+                            >Master: {
+                                master ? master.name : "Desconocido"
+                            }</span
+                        >
+                    </div>
+                    <div>
+                        Plazas: {
+                            campaign.totalSeats > 0
+                                ? campaign.totalSeats
+                                : "Sin límite"
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div
+            class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 grid grid-cols-1 lg:grid-cols-3 gap-10"
+        >
+            <div class="lg:col-span-2 space-y-8">
+                <div
+                    class="bg-slate-800/50 p-6 rounded-lg border border-slate-700"
+                >
+                    <h3
+                        class="text-xl font-bold text-white mb-4 border-b border-slate-700 pb-2"
+                    >
+                        Descripción
+                    </h3>
+                    <p
+                        class="text-slate-300 leading-relaxed whitespace-pre-wrap"
+                    >
+                        {campaign.description}
+                    </p>
+                </div>
+
+                <div
+                    class="bg-slate-800/50 p-6 rounded-lg border border-slate-700"
+                >
+                    <h3
+                        class="text-xl font-bold text-white mb-4 border-b border-slate-700 pb-2"
+                    >
+                        Detalles de Sesión
+                    </h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-sm text-slate-500">Próxima Sesión</p>
+                            <p class="text-lg text-white font-medium">
+                                {
+                                    campaign.nextSession
+                                        ? new Date(
+                                              campaign.nextSession,
+                                          ).toLocaleDateString()
+                                        : "Por definir"
+                                }
+                            </p>
+                            {
+                                campaign.nextSession && (
+                                    <p class="text-sm text-cyan-400">
+                                        {new Date(
+                                            campaign.nextSession,
+                                        ).toLocaleTimeString([], {
+                                            hour: "2-digit",
+                                            minute: "2-digit",
+                                        })}
+                                    </p>
+                                )
+                            }
+                        </div>
+                        <div>
+                            <p class="text-sm text-slate-500">Estado</p>
+                            <p
+                                class="text-lg text-white font-medium capitalize"
+                            >
+                                {campaign.status}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar / Action -->
+            <div class="space-y-6">
+                <div
+                    class="bg-slate-800 p-6 rounded-lg border border-slate-600 shadow-xl"
+                >
+                    {
+                        user ? (
+                            <div class="text-center">
+                                {status === "active" ? (
+                                    <div class="bg-green-900/30 text-green-400 p-4 rounded mb-4 border border-green-500/30">
+                                        <p class="font-bold text-lg">
+                                            Eres miembro
+                                        </p>
+                                        <p class="text-sm">
+                                            ¡Estás participando en esta campaña!
+                                        </p>
+                                    </div>
+                                ) : status === "requested" ? (
+                                    <div>
+                                        <div class="bg-yellow-900/30 text-yellow-400 p-4 rounded mb-4 border border-yellow-500/30">
+                                            <p class="font-bold">
+                                                Solicitud Pendiente
+                                            </p>
+                                            <p class="text-sm">
+                                                Esperando aprobación del Master.
+                                            </p>
+                                        </div>
+                                        <form method="POST">
+                                            <input
+                                                type="hidden"
+                                                name="action"
+                                                value="cancel_request"
+                                            />
+                                            <button class="text-slate-400 hover:text-white text-sm underline">
+                                                Cancelar Solicitud
+                                            </button>
+                                        </form>
+                                    </div>
+                                ) : status === "invited" ? (
+                                    <div>
+                                        <div class="bg-blue-900/30 text-blue-400 p-4 rounded mb-4 border border-blue-500/30">
+                                            <p class="font-bold">
+                                                ¡Has sido invitado!
+                                            </p>
+                                            <p class="text-sm">
+                                                Ve a tu perfil para aceptar.
+                                            </p>
+                                        </div>
+                                        <a
+                                            href="/profile"
+                                            class="block w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition-colors"
+                                        >
+                                            Ir a mi Perfil
+                                        </a>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <p class="text-slate-300 mb-4">
+                                            ¿Te interesa unirte a esta aventura?
+                                        </p>
+                                        <form method="POST">
+                                            <input
+                                                type="hidden"
+                                                name="action"
+                                                value="join_request"
+                                            />
+                                            <button
+                                                type="submit"
+                                                class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-4 rounded shadow-lg shadow-cyan-900/20 transition-all hover:scale-105"
+                                            >
+                                                Solicitar Unirse
+                                            </button>
+                                        </form>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <div class="text-center">
+                                <p class="text-slate-300 mb-4">
+                                    Inicia sesión para unirte a la campaña.
+                                </p>
+                                <a
+                                    href="/login"
+                                    class="block w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-4 rounded transition-colors mb-2"
+                                >
+                                    Iniciar Sesión
+                                </a>
+                                <a
+                                    href="/register"
+                                    class="text-cyan-400 hover:text-cyan-300 text-sm"
+                                >
+                                    ¿No tienes cuenta? Regístrate
+                                </a>
+                            </div>
+                        )
+                    }
+
+                    {
+                        message && (
+                            <div class="mt-4 p-2 bg-slate-900 rounded text-center text-sm text-cyan-200 border border-slate-700">
+                                {message}
+                            </div>
+                        )
+                    }
+                </div>
+
+                {/* Participants Grid (Public info) */}
+                <div
+                    class="bg-slate-800/50 p-6 rounded-lg border border-slate-700"
+                >
+                    <h4 class="font-bold text-white mb-4">Aventureros</h4>
+
+                    {
+                        /* We need to fetch participants to show avatars. 
+                         Doing it in component script is better. */
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</Layout>

@@ -1,0 +1,450 @@
+---
+import Layout from "../layouts/Layout.astro";
+import {
+    db,
+    Campaign,
+    CampaignParticipant,
+    Event,
+    eq,
+    and,
+    desc,
+    asc,
+} from "astro:db";
+
+const { user } = Astro.locals;
+
+if (!user) {
+    return Astro.redirect("/login");
+}
+
+// Fetch Active Campaigns
+const activeCampaigns = await db
+    .select({
+        id: Campaign.id,
+        name: Campaign.name,
+        system: Campaign.system,
+        status: CampaignParticipant.status, // Error likely here if alias not used correctly, let's fix in second turn if needed.
+        // Astro DB join syntax might return joined object.
+    })
+    .from(CampaignParticipant)
+    .innerJoin(Campaign, eq(CampaignParticipant.campaignId, Campaign.id))
+    .where(
+        and(
+            eq(CampaignParticipant.userId, user.id),
+            eq(CampaignParticipant.status, "active"),
+        ),
+    );
+
+// Fetch Invitations
+const invitations = await db
+    .select({
+        id: CampaignParticipant.id,
+        campaignName: Campaign.name,
+        campaignId: Campaign.id,
+        invitedAt: CampaignParticipant.createdAt,
+    })
+    .from(CampaignParticipant)
+    .innerJoin(Campaign, eq(CampaignParticipant.campaignId, Campaign.id))
+    .where(
+        and(
+            eq(CampaignParticipant.userId, user.id),
+            eq(CampaignParticipant.status, "invited"),
+        ),
+    );
+
+// Fetch Next Sessions (simplified logic: all future events from joined campaigns)
+// This is harder with pure SQL builder without subqueries in some versions, but let's try.
+// We'll simplisticly fetch events for active campaigns.
+const campaignIds = activeCampaigns.map((c) => c.id); // Wait, result structure of join?
+
+// Let's debug the join structure first properly.
+// Drizzle: .select().from().innerJoin() returns an array of { table1: ..., table2: ... } objects unless fields are specified.
+// Since I specified fields in .select({...}), it returns that shape.
+
+// Let's try to get full objects and map them.
+const myCampaignsRaw = await db
+    .select()
+    .from(CampaignParticipant)
+    .innerJoin(Campaign, eq(CampaignParticipant.campaignId, Campaign.id))
+    .where(
+        and(
+            eq(CampaignParticipant.userId, user.id),
+            eq(CampaignParticipant.status, "active"),
+        ),
+    );
+
+const myCampaigns = myCampaignsRaw.map(
+    ({ Campaign: c, CampaignParticipant: cp }) => ({
+        ...c,
+        role: cp.role,
+    }),
+);
+
+const myInvitesRaw = await db
+    .select()
+    .from(CampaignParticipant)
+    .innerJoin(Campaign, eq(CampaignParticipant.campaignId, Campaign.id))
+    .where(
+        and(
+            eq(CampaignParticipant.userId, user.id),
+            eq(CampaignParticipant.status, "invited"),
+        ),
+    );
+
+const myInvites = myInvitesRaw.map(
+    ({ Campaign: c, CampaignParticipant: cp }) => ({
+        ...c,
+        inviteId: cp.id,
+    }),
+);
+
+// Events
+// We can't easily filter by "campaignId IN (...)". Astro DB might support `inArray`.
+import { inArray, gt } from "astro:db";
+let nextSessions = [];
+if (myCampaigns.length > 0) {
+    const cIds = myCampaigns.map((c) => c.id);
+    nextSessions = await db
+        .select()
+        .from(Event)
+        .where(and(inArray(Event.campaignId, cIds), gt(Event.date, new Date())))
+        .orderBy(asc(Event.date))
+        .limit(5);
+}
+
+// Handler for avatar upload is via API route, form triggers it.
+---
+
+<Layout title={`Perfil de ${user.name}`}>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <!-- Header -->
+        <div
+            class="bg-slate-800 rounded-lg shadow-xl overflow-hidden border border-slate-700"
+        >
+            <div class="h-32 bg-linear-to-r from-cyan-900 to-blue-900"></div>
+            <div class="px-6 py-6 relative">
+                <div class="sm:flex sm:items-end sm:space-x-5">
+                    <div class="relative -mt-16">
+                        <div
+                            class="group relative w-32 h-32 rounded-full overflow-hidden border-4 border-slate-800 bg-slate-700"
+                        >
+                            {
+                                user.image ? (
+                                    <img
+                                        id="avatar-preview"
+                                        src={user.image}
+                                        class="w-full h-full object-cover"
+                                        alt="Avatar"
+                                    />
+                                ) : (
+                                    <div class="w-full h-full flex items-center justify-center bg-cyan-900 text-4xl font-bold text-cyan-200">
+                                        {user.name.charAt(0).toUpperCase()}
+                                    </div>
+                                )
+                            }
+                            <label
+                                for="avatar-upload"
+                                class="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity curr-pointer cursor-pointer text-white text-sm font-medium"
+                            >
+                                Cambiar
+                            </label>
+                            <input
+                                type="file"
+                                id="avatar-upload"
+                                name="avatar"
+                                accept="image/*"
+                                class="hidden"
+                            />
+                        </div>
+                    </div>
+                    <div class="mt-6 sm:mt-0 sm:flex-1">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h1
+                                    class="text-3xl font-bold text-white font-serif"
+                                >
+                                    {user.name}
+                                </h1>
+                                <p class="text-sm text-slate-400">
+                                    {user.email}
+                                </p>
+                                <span
+                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-cyan-900 text-cyan-200 mt-2"
+                                >
+                                    {user.role}
+                                </span>
+                            </div>
+                            <button
+                                id="edit-profile-btn"
+                                class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                            >
+                                Editar Perfil
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Edit Form (Hidden) -->
+                <form
+                    id="profile-form"
+                    class="mt-6 hidden border-t border-slate-700 pt-6 space-y-4"
+                >
+                    <div>
+                        <label
+                            for="username"
+                            class="block text-sm font-medium text-slate-300"
+                            >Nombre de Usuario</label
+                        >
+                        <input
+                            type="text"
+                            id="username"
+                            name="username"
+                            value={user.name}
+                            class="mt-1 block w-full rounded-md border-slate-600 bg-slate-900 text-white shadow-xs focus:border-cyan-500 focus:ring-cyan-500 sm:text-sm px-4 py-2"
+                        />
+                    </div>
+                    <div class="flex justify-end gap-3">
+                        <button
+                            type="button"
+                            id="cancel-edit"
+                            class="px-4 py-2 text-sm text-slate-300 hover:text-white"
+                            >Cancelar</button
+                        >
+                        <button
+                            type="submit"
+                            class="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                            >Guardar Cambios</button
+                        >
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Content Grid -->
+        <div class="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Main Column -->
+            <div class="lg:col-span-2 space-y-8">
+                <!-- Active Campaigns -->
+                <section>
+                    <h2
+                        class="text-2xl font-bold text-white font-serif mb-4 flex items-center gap-2"
+                    >
+                        <span class="text-cyan-400">⚔️</span> Mis Campañas
+                    </h2>
+                    {
+                        myCampaigns.length > 0 ? (
+                            <div class="grid gap-4 sm:grid-cols-2">
+                                {myCampaigns.map((campaign) => (
+                                    <div class="bg-slate-800 rounded-lg p-5 border border-slate-700 hover:border-cyan-500/50 transition-colors">
+                                        <div class="flex justify-between items-start mb-2">
+                                            <h3 class="font-bold text-lg text-white">
+                                                {campaign.name}
+                                            </h3>
+                                            <span class="text-xs bg-slate-900 text-slate-300 px-2 py-1 rounded">
+                                                {campaign.role === "master"
+                                                    ? "👑 DM"
+                                                    : "👤 Jugador"}
+                                            </span>
+                                        </div>
+                                        <p class="text-sm text-slate-400 mb-4 line-clamp-2">
+                                            {campaign.description}
+                                        </p>
+                                        <div class="flex justify-between items-center text-xs text-slate-500">
+                                            <span>
+                                                Sistema:{" "}
+                                                {campaign.system || "N/A"}
+                                            </span>
+                                            <a
+                                                href={`/campaigns/${campaign.id}`}
+                                                class="text-cyan-400 hover:text-cyan-300"
+                                            >
+                                                Ver Detalles →
+                                            </a>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div class="text-center py-10 bg-slate-800/50 rounded-lg border border-slate-800">
+                                <p class="text-slate-400">
+                                    No estás participando en ninguna campaña
+                                    activa.
+                                </p>
+                                <a
+                                    href="/campaigns"
+                                    class="text-cyan-400 hover:underline mt-2 inline-block"
+                                >
+                                    Explorar Campañas
+                                </a>
+                            </div>
+                        )
+                    }
+                </section>
+
+                <!-- Invitations -->
+                {
+                    myInvites.length > 0 && (
+                        <section>
+                            <h2 class="text-2xl font-bold text-white font-serif mb-4 flex items-center gap-2">
+                                <span class="text-yellow-400">📩</span>{" "}
+                                Invitaciones Pendientes
+                            </h2>
+                            <div class="space-y-4">
+                                {myInvites.map((invite) => (
+                                    <div class="bg-slate-800/80 rounded-lg p-4 border border-yellow-500/30 flex items-center justify-between">
+                                        <div>
+                                            <h3 class="font-bold text-white">
+                                                {invite.name}
+                                            </h3>
+                                            <p class="text-sm text-slate-400">
+                                                Te han invitado a unirte a esta
+                                                aventura.
+                                            </p>
+                                        </div>
+                                        <div class="flex gap-2">
+                                            <button
+                                                data-id={invite.inviteId}
+                                                class="accept-invite bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm transition-colors"
+                                            >
+                                                Aceptar
+                                            </button>
+                                            <button
+                                                data-id={invite.inviteId}
+                                                class="decline-invite bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm transition-colors"
+                                            >
+                                                Rechazar
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+                    )
+                }
+            </div>
+
+            <!-- Sidebar -->
+            <div class="space-y-8">
+                <!-- Next Sessions -->
+                <section
+                    class="bg-slate-800 rounded-lg p-6 border border-slate-700"
+                >
+                    <h2 class="text-xl font-bold text-white font-serif mb-4">
+                        Próximas Sesiones
+                    </h2>
+                    {
+                        nextSessions.length > 0 ? (
+                            <ul class="space-y-4">
+                                {nextSessions.map((event) => (
+                                    <li class="border-l-2 border-cyan-500 pl-4 py-1">
+                                        <p class="font-bold text-slate-200">
+                                            {event.name}
+                                        </p>
+                                        <p class="text-sm text-cyan-400">
+                                            {event.date.toLocaleDateString()}{" "}
+                                            {event.date.toLocaleTimeString([], {
+                                                hour: "2-digit",
+                                                minute: "2-digit",
+                                            })}
+                                        </p>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p class="text-sm text-slate-400 italic">
+                                No hay sesiones programadas pronto.
+                            </p>
+                        )
+                    }
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Avatar Upload
+        const avatarInput = document.getElementById("avatar-upload");
+        avatarInput?.addEventListener("change", async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append("avatar", file);
+
+            try {
+                const res = await fetch("/api/users/avatar", {
+                    method: "POST",
+                    body: formData,
+                });
+
+                if (res.ok) {
+                    window.location.reload();
+                } else {
+                    alert("Error al subir imagen");
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Error de conexión");
+            }
+        });
+
+        // Edit Profile Toggle
+        const editBtn = document.getElementById("edit-profile-btn");
+        const cancelBtn = document.getElementById("cancel-edit");
+        const form = document.getElementById("profile-form");
+
+        editBtn?.addEventListener("click", () =>
+            form.classList.remove("hidden"),
+        );
+        cancelBtn?.addEventListener("click", () =>
+            form.classList.add("hidden"),
+        );
+
+        // Update Profile Info
+        form?.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+
+            try {
+                const res = await fetch("/api/users/update", {
+                    method: "POST",
+                    body: JSON.stringify(Object.fromEntries(formData)),
+                    headers: { "Content-Type": "application/json" },
+                });
+
+                if (res.ok) {
+                    window.location.reload();
+                } else {
+                    alert("Error al actualizar perfil");
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        });
+
+        // Invitations Logic (TODO: endpoints)
+        document.querySelectorAll(".accept-invite").forEach((btn) => {
+            btn.addEventListener("click", async () => {
+                const id = btn.dataset.id;
+                await fetch("/api/campaigns/respond-invite", {
+                    method: "POST",
+                    body: JSON.stringify({ inviteId: id, accept: true }),
+                    headers: { "Content-Type": "application/json" },
+                });
+                window.location.reload();
+            });
+        });
+
+        document.querySelectorAll(".decline-invite").forEach((btn) => {
+            btn.addEventListener("click", async () => {
+                const id = btn.dataset.id;
+                await fetch("/api/campaigns/respond-invite", {
+                    method: "POST",
+                    body: JSON.stringify({ inviteId: id, accept: false }),
+                    headers: { "Content-Type": "application/json" },
+                });
+                window.location.reload();
+            });
+        });
+    </script>
+</Layout>
