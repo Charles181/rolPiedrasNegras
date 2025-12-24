@@ -1,9 +1,14 @@
 ---
 import Layout from "../layouts/Layout.astro";
 
-// If user is already logged in, redirect to admin
-if (Astro.locals.session) {
-  return Astro.redirect("/admin");
+// If user is already logged in, redirect based on role
+const user = Astro.locals.user;
+if (user) {
+  if (user.role === "admin" || user.role === "master") {
+    return Astro.redirect("/admin");
+  } else {
+    return Astro.redirect("/profile");
+  }
 }
 ---
 

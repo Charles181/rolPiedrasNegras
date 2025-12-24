@@ -66,6 +66,7 @@ export const Campaign = defineTable({
     totalSeats: column.number({ default: 0 }),
     masterId: column.text({ references: () => User.columns.id, default: 'Nano' }), // Creator/Master
     status: column.text({ default: 'ongoing' }), // ongoing, finished
+    image: column.text({ optional: true }),
     createdAt: column.date({ default: new Date() }),
     updatedAt: column.date({ default: new Date() }),
   }

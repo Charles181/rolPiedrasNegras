@@ -57,7 +57,9 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     });
 
     // Return success with redirect URL
-    return new Response(JSON.stringify({ success: true, redirectUrl: "/admin" }), {
+    const redirectUrl = (user.role === "admin" || user.role === "master") ? "/admin" : "/profile";
+
+    return new Response(JSON.stringify({ success: true, redirectUrl }), {
         status: 200,
         headers: { "Content-Type": "application/json" }
     });

@@ -40,7 +40,23 @@ if (user) {
         status = participation.status;
         participantId = participation.id;
     }
+    if (participation) {
+        status = participation.status;
+        participantId = participation.id;
+    }
 }
+
+// Fetch Active Participants
+const activeParticipants = await db
+    .select()
+    .from(CampaignParticipant)
+    .innerJoin(User, eq(CampaignParticipant.userId, User.id))
+    .where(
+        and(
+            eq(CampaignParticipant.campaignId, id),
+            eq(CampaignParticipant.status, "active"),
+        ),
+    );
 
 // Logic for Request Join
 let message = "";
@@ -101,7 +117,7 @@ if (user && Astro.request.method === "POST") {
                 </h1>
                 <div class="flex items-center gap-4 text-slate-300 text-sm">
                     <div class="flex items-center gap-2">
-                        <span class="bg-slate-800 px-2 py-1 rounded"
+                        <span class="bg-slate-800 px-2 py-1 rounded font-bold"
                             >Master: {
                                 master ? master.name : "Desconocido"
                             }</span
@@ -109,10 +125,8 @@ if (user && Astro.request.method === "POST") {
                     </div>
                     <div>
                         Plazas: {
-                            campaign.totalSeats > 0
-                                ? campaign.totalSeats
-                                : "Sin límite"
-                        }
+                            campaign.totalSeats - activeParticipants.length
+                        } / {campaign.totalSeats}
                     </div>
                 </div>
             </div>
@@ -132,7 +146,7 @@ if (user && Astro.request.method === "POST") {
                         Descripción
                     </h3>
                     <p
-                        class="text-slate-300 leading-relaxed whitespace-pre-wrap"
+                        class="text-slate-300 leading-relaxed whitespace-pre-wrap italic"
                     >
                         {campaign.description}
                     </p>
@@ -296,8 +310,32 @@ if (user && Astro.request.method === "POST") {
                     <h4 class="font-bold text-white mb-4">Aventureros</h4>
 
                     {
-                        /* We need to fetch participants to show avatars. 
-                         Doing it in component script is better. */
+                        activeParticipants.length > 0 ? (
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                {activeParticipants.map(({ User: u }) => (
+                                    <div class="flex flex-col items-center hover:scale-110 transition-transform">
+                                        {u.image ? (
+                                            <img
+                                                src={u.image}
+                                                alt={u.name}
+                                                class="w-16 h-16 rounded-full border-2 border-slate-600 object-cover"
+                                            />
+                                        ) : (
+                                            <div class="w-16 h-16 rounded-full bg-slate-700 flex items-center justify-center text-2xl border-2 border-slate-600">
+                                                {u.name[0]}
+                                            </div>
+                                        )}
+                                        <span class="text-slate-300 text-sm mt-2 text-center font-medium">
+                                            {u.name}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p class="text-slate-400 italic">
+                                Aún no hay aventureros en esta mesa.
+                            </p>
+                        )
                     }
                 </div>
             </div>

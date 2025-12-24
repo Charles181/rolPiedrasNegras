@@ -1,6 +1,9 @@
 ---
 import AdminLayout from "../../../../layouts/AdminLayout.astro";
 import { db, Campaign, User, CampaignParticipant, eq, and, ne } from "astro:db";
+import sharp from "sharp";
+import fs from "node:fs/promises";
+import path from "node:path";
 
 const { user } = Astro.locals;
 const { id } = Astro.params;
@@ -63,17 +66,49 @@ if (Astro.request.method === "POST") {
             const status = formData.get("status") as string;
             const totalSeats = parseInt(formData.get("totalSeats") as string);
 
+            const imageFile = formData.get("image") as File;
+            let imageUrl = undefined;
+
+            if (imageFile && imageFile.size > 0) {
+                if (!imageFile.type.startsWith("image/")) {
+                    throw new Error("El archivo debe ser una imagen.");
+                }
+
+                const buffer = Buffer.from(await imageFile.arrayBuffer());
+                const filename = `campaign-${id}-${Date.now()}.webp`;
+                const publicDir = path.join(process.cwd(), "public");
+                const uploadDir = path.join(publicDir, "uploads", "campaigns");
+                const filepath = path.join(uploadDir, filename);
+
+                // Ensure dir exists
+                await fs.mkdir(uploadDir, { recursive: true });
+
+                // Resize and save
+                await sharp(buffer)
+                    .resize(800, 500, { fit: "cover" })
+                    .toFormat("webp")
+                    .toFile(filepath);
+
+                imageUrl = `/uploads/campaigns/${filename}`;
+            }
+
+            const updateData: any = {
+                name,
+                description,
+                system,
+                status,
+                totalSeats,
+                nextSession: nextSession ? new Date(nextSession) : null,
+                updatedAt: new Date(),
+            };
+
+            if (imageUrl) {
+                updateData.image = imageUrl;
+            }
+
             await db
                 .update(Campaign)
-                .set({
-                    name,
-                    description,
-                    system,
-                    status,
-                    totalSeats,
-                    nextSession: nextSession ? new Date(nextSession) : null,
-                    updatedAt: new Date(),
-                })
+                .set(updateData)
                 .where(eq(Campaign.id, id));
             message = "Campaña actualizada.";
         } else if (action === "invite") {
@@ -149,7 +184,11 @@ if (Astro.request.method === "POST") {
                     <h2 class="text-xl font-bold text-white mb-4">
                         Detalles de la Campaña
                     </h2>
-                    <form method="POST" class="space-y-4">
+                    <form
+                        method="POST"
+                        enctype="multipart/form-data"
+                        class="space-y-4"
+                    >
                         <input type="hidden" name="action" value="update" />
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="col-span-2">
@@ -162,6 +201,27 @@ if (Astro.request.method === "POST") {
                                     value={campaign.name}
                                     class="w-full bg-slate-900 border-slate-600 rounded text-white px-3 py-2"
                                     required
+                                />
+                            </div>
+                            <div class="col-span-2">
+                                <label class="block text-sm text-slate-400"
+                                    >Imagen</label
+                                >
+                                {
+                                    campaign.image && (
+                                        <div class="mb-2">
+                                            <img
+                                                src={campaign.image}
+                                                class="h-32 rounded object-cover"
+                                            />
+                                        </div>
+                                    )
+                                }
+                                <input
+                                    type="file"
+                                    name="image"
+                                    accept="image/*"
+                                    class="w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-slate-700 file:text-white hover:file:bg-slate-600"
                                 />
                             </div>
                             <div class="col-span-2">
