@@ -1,0 +1,61 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { db, Post, eq } from "astro:db";
+import { marked } from "marked";
+
+const { slug } = Astro.params;
+
+if (!slug) {
+    return Astro.redirect("/404");
+}
+
+const posts = await db.select().from(Post).where(eq(Post.slug, slug));
+const post = posts[0];
+
+if (!post) {
+    return Astro.redirect("/404"); // Or handle gracefully
+}
+
+const content = marked.parse(post.body);
+---
+
+<Layout title={post.title}>
+    <div class="min-h-screen bg-slate-900 text-slate-100 py-12">
+        <article class="container mx-auto px-4 max-w-4xl">
+            {
+                post.image && (
+                    <img
+                        src={post.image}
+                        alt={post.title}
+                        class="w-full h-64 md:h-96 object-cover rounded-xl shadow-2xl mb-8"
+                    />
+                )
+            }
+
+            <header class="mb-8 border-b border-slate-700 pb-8">
+                <div
+                    class="flex items-center gap-4 text-sm text-red-400 font-semibold mb-2 uppercase tracking-wide"
+                >
+                    <span>{post.category}</span>
+                    <span>•</span>
+                    <span
+                        >{new Date(post.publishedAt).toLocaleDateString()}</span
+                    >
+                </div>
+                <h1
+                    class="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-orange-500 mb-4"
+                >
+                    {post.title}
+                </h1>
+                <div class="flex items-center gap-2 text-slate-400">
+                    <span>Escrito por {post.author}</span>
+                </div>
+            </header>
+
+            <div
+                class="prose prose-invert prose-lg max-w-none prose-headings:text-red-400 prose-a:text-red-400 hover:prose-a:text-red-300"
+                set:html={content}
+            />
+        </article>
+    </div>
+</Layout>

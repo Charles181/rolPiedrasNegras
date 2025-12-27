@@ -95,11 +95,15 @@ export const Event = defineTable({
 
 export const Post = defineTable({
   columns: {
-    id: column.text({ primaryKey: true }),
+    id: column.number({ primaryKey: true }),
     title: column.text(),
-    content: column.text(), // Markdown or HTML
+    slug: column.text({ unique: true }),
+    body: column.text(), // Markdown content
+    image: column.text({ optional: true }),
+    category: column.text(),
     type: column.text({ default: 'post' }), // post, rule
-    published: column.boolean({ default: false }),
+    publishedAt: column.date({ default: new Date() }),
+    author: column.text(), // Author name snapshot
     authorId: column.text({ references: () => User.columns.id }),
     createdAt: column.date({ default: new Date() }),
   }

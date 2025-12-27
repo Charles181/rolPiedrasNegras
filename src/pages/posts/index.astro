@@ -1,0 +1,44 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import PostCatalog from "../../components/PostCatalog";
+import { db, Post, eq, desc } from "astro:db";
+
+// Fetch posts
+const posts = await db
+    .select()
+    .from(Post)
+    .where(eq(Post.type, "post"))
+    .orderBy(desc(Post.publishedAt));
+
+// Serialize data for client
+const serializedPosts = posts.map((p) => ({
+    ...p,
+    publishedAt: p.publishedAt
+        ? new Date(p.publishedAt)
+        : new Date(p.createdAt), // Ensure valid date
+}));
+---
+
+<Layout title="Crónicas | ROLPN">
+    <div class="min-h-screen bg-slate-950 py-12">
+        <div class="container mx-auto px-4">
+            <header class="mb-12 text-center">
+                <h1
+                    class="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-linear-to-r from-red-500 to-orange-400 mb-4"
+                >
+                    Crónicas del Gremio
+                </h1>
+                <p class="text-slate-400 text-lg max-w-2xl mx-auto">
+                    Explora las historias, misiones y leyendas forjadas por
+                    nuestros aventureros.
+                </p>
+            </header>
+
+            <PostCatalog
+                client:load
+                initialPosts={serializedPosts}
+                type="post"
+            />
+        </div>
+    </div>
+</Layout>

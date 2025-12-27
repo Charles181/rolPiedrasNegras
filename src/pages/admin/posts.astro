@@ -1,79 +1,96 @@
 ---
 import AdminLayout from "../../layouts/AdminLayout.astro";
-import { db, Post, User, eq } from "astro:db";
+import { db, Post, User, eq, desc } from "astro:db";
 
 const posts = await db
     .select({
         id: Post.id,
         title: Post.title,
+        slug: Post.slug,
+        type: Post.type,
         author: User.name,
-        published: Post.published,
+        publishedAt: Post.publishedAt,
         createdAt: Post.createdAt,
     })
     .from(Post)
     .innerJoin(User, eq(Post.authorId, User.id))
-    .where(eq(Post.type, "post"));
+    .orderBy(desc(Post.createdAt));
 ---
 
-<AdminLayout>
+<AdminLayout title="Manage Content">
     <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold">Posts Management</h1>
-        <button
-            class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-            >Create Post</button
+        <h1 class="text-3xl font-bold text-white">Content Management</h1>
+        <a
+            href="/admin/create"
+            class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
         >
+            Create New
+        </a>
     </div>
 
-    <div class="bg-white shadow rounded-lg overflow-hidden">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
+    <div
+        class="bg-slate-800 shadow rounded-lg overflow-hidden border border-slate-700"
+    >
+        <table class="min-w-full divide-y divide-slate-700">
+            <thead class="bg-slate-900">
                 <tr>
                     <th
-                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider"
                         >Title</th
                     >
                     <th
-                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider"
+                        >Type</th
+                    >
+                    <th
+                        class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider"
                         >Author</th
                     >
                     <th
-                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                        >Status</th
+                        class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider"
+                        >Published</th
                     >
                     <th
-                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                        >Date</th
-                    >
-                    <th
-                        class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        class="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider"
                         >Actions</th
                     >
                 </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
+            <tbody
+                class="bg-slate-800 divide-y divide-slate-700 text-slate-300"
+            >
                 {
                     posts.map((post) => (
                         <tr>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
                                 {post.title}
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {post.author}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm">
                                 <span
-                                    class={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${post.published ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}`}
+                                    class={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${post.type === "rule" ? "bg-purple-900 text-purple-200" : "bg-blue-900 text-blue-200"}`}
                                 >
-                                    {post.published ? "Published" : "Draft"}
+                                    {post.type}
                                 </span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {post.createdAt.toLocaleDateString()}
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
+                                {post.author}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
+                                {new Date(
+                                    post.publishedAt,
+                                ).toLocaleDateString()}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 <a
-                                    href="#"
-                                    class="text-indigo-600 hover:text-indigo-900"
+                                    href={`/posts/${post.slug}`}
+                                    target="_blank"
+                                    class="text-blue-400 hover:text-blue-300 mr-4"
+                                >
+                                    View
+                                </a>
+                                <a
+                                    href={`/admin/posts/edit/${post.id}`}
+                                    class="text-indigo-400 hover:text-indigo-300 transition"
                                 >
                                     Edit
                                 </a>

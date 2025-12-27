@@ -1,0 +1,44 @@
+---
+import Layout from "../layouts/Layout.astro";
+import PostCatalog from "../components/PostCatalog";
+import { db, Post, eq, desc } from "astro:db";
+
+// Fetch rules
+const rules = await db
+    .select()
+    .from(Post)
+    .where(eq(Post.type, "rule"))
+    .orderBy(desc(Post.publishedAt));
+
+// Serialize
+const serializedRules = rules.map((p) => ({
+    ...p,
+    publishedAt: p.publishedAt
+        ? new Date(p.publishedAt)
+        : new Date(p.createdAt),
+}));
+---
+
+<Layout title="Reglas | ROLPN">
+    <div class="min-h-screen bg-slate-950 py-12">
+        <div class="container mx-auto px-4">
+            <header class="mb-12 text-center">
+                <h1
+                    class="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-linear-to-r from-blue-500 to-cyan-400 mb-4"
+                >
+                    Códice de Reglas
+                </h1>
+                <p class="text-slate-400 text-lg max-w-2xl mx-auto">
+                    Consulta los reglamentos, guías y sistemas que rigen nuestro
+                    mundo.
+                </p>
+            </header>
+
+            <PostCatalog
+                client:load
+                initialPosts={serializedRules}
+                type="rule"
+            />
+        </div>
+    </div>
+</Layout>

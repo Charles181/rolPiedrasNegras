@@ -1,6 +1,7 @@
 ---
 const links = [
   { name: "Inicio", href: "/" },
+  { name: "Crónicas", href: "/posts" },
   { name: "Campañas", href: "/campaigns" },
   { name: "Eventos", href: "/events" },
   { name: "Reglas", href: "/rules" },
@@ -148,7 +149,7 @@ if (user) {
         {user ? (
           <div class="space-y-1">
              <div class="flex items-center px-3 mb-3">
-               <div class="flex-shrink-0">
+               <div class="shrink-0">
                   {user.image ? (
                     <img class="h-10 w-10 rounded-full" src={user.image} alt="" />
                   ) : (

@@ -1,0 +1,22 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import PostEditor from "../../components/PostEditor";
+
+const { user } = Astro.locals;
+if (!user || (user.role !== "admin" && user.role !== "master")) {
+    return Astro.redirect("/login");
+}
+---
+
+<AdminLayout title="Crear Post/Regla">
+    <div class="container mx-auto px-4 py-8">
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-white">Crear Post/Regla</h1>
+            <p class="text-gray-400">
+                Agrega nuevos posts, reglas, o lore al sistema.
+            </p>
+        </div>
+
+        <PostEditor client:only="react" />
+    </div>
+</AdminLayout>
