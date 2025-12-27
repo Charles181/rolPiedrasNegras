@@ -1,0 +1,120 @@
+---
+// src/pages/404.astro
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout title="¡Página Perdida en la Niebla!">
+    <div
+        class="min-h-[80vh] flex flex-col items-center justify-center px-4 text-center"
+    >
+        <!-- Título y código de error -->
+        <div class="mb-6">
+            <h1
+                class="text-8xl md:text-9xl font-bold text-red-400 mb-2 font-serif tracking-wider"
+            >
+                404
+            </h1>
+            <div class="w-32 h-1 bg-amber-500 mx-auto mb-6"></div>
+            <h2 class="text-3xl md:text-4xl font-bold text-slate-200 mb-4">
+                ¡Portal Dimensional Colapsado!
+            </h2>
+        </div>
+
+        <!-- Imagen/Ilustración -->
+        <div class="mb-8 max-w-md">
+            <div class="relative">
+                <!-- Imagen placeholder con temática D&D -->
+                <div
+                    class="w-64 h-64 mx-auto bg-slate-800 rounded-full border-4 border-slate-700 flex items-center justify-center overflow-hidden"
+                >
+                    <div class="text-center">
+                        <div class="text-6xl mb-2">🧭</div>
+                        <div class="text-slate-400 text-sm px-4">
+                            Mapa del Mundo Antiguo
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Elementos decorativos -->
+                <div class="absolute -top-2 -right-4 text-3xl">🧙‍♂️</div>
+                <div class="absolute -bottom-4 -left-4 text-3xl">⚔️</div>
+            </div>
+        </div>
+
+        <!-- Mensaje narrativo -->
+        <div class="max-w-2xl mb-8">
+            <p class="text-xl text-slate-300 mb-6 leading-relaxed">
+                El hechizo de teletransporte se ha desviado, o tal vez el
+                pergamino que encontraste estaba incompleto. La página que
+                buscas se ha perdido en las <span class="text-amber-300"
+                    >Nieblas de lo Inexistente</span
+                >.
+            </p>
+
+            <div
+                class="bg-slate-800/50 border-l-4 border-amber-500 p-4 text-left my-8 rounded-r"
+            >
+                <p class="text-slate-300 italic">
+                    <span class="text-amber-300 font-bold"
+                        >Sabiduría del Archimago:</span
+                    > "A veces, el camino correcto no es el que está marcado en el
+                    mapa, sino el que descubres al perderte. Pero en este caso, mejor
+                    vuelve al camino principal."
+                </p>
+            </div>
+
+            <p class="text-slate-400 mb-8">
+                Posibles causas: Un <span class="text-red-300"
+                    >Glyph of Warding</span
+                > mal configurado, un enlace hechizado o que simplemente la crónica
+                que buscas aún no ha sido escrita.
+            </p>
+        </div>
+
+        <!-- Acciones -->
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <a
+                href="/"
+                class="px-6 py-3 bg-amber-600 hover:bg-amber-700 text-slate-900 font-bold rounded-lg transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-amber-900/30 flex items-center justify-center gap-2"
+            >
+                <span>🏰</span> Volver a la Taberna Principal
+            </a>
+
+            <a
+                href="/posts"
+                class="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-medium rounded-lg transition-colors duration-300 flex items-center justify-center gap-2"
+            >
+                <span>📜</span> Explorar las Crónicas
+            </a>
+        </div>
+
+        <!-- Detalle de utilidad -->
+        <div class="mt-12 pt-6 border-t border-slate-800 w-full max-w-md">
+            <p class="text-sm text-slate-500">
+                Si crees que esto es un error del <span class="text-purple-400"
+                    >Dungeon Master</span
+                >, puedes reportarlo a los escribas del gremio.
+            </p>
+            <div class="flex justify-center gap-6 mt-4 text-slate-600">
+                <span>🔍 d20 + Investigación</span>
+                <span>🧭 CD: 404</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estilos específicos para efectos -->
+    <style>
+        @keyframes pulse-glow {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.7;
+            }
+        }
+        .text-red-400 {
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+    </style>
+</Layout>
