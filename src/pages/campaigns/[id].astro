@@ -190,7 +190,11 @@ if (user && Astro.request.method === "POST") {
                             <p
                                 class="text-lg text-white font-medium capitalize"
                             >
-                                {campaign.status}
+                                {
+                                    campaign.status === "ongoing"
+                                        ? "En curso"
+                                        : campaign.status
+                                }
                             </p>
                         </div>
                     </div>

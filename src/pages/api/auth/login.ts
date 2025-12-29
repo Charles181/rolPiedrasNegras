@@ -7,7 +7,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     const password = formData.get("password")?.toString();
 
     if (!email || !password) {
-        return new Response(JSON.stringify({ error: "Email and password are required" }), {
+        return new Response(JSON.stringify({ error: "Email y contraseña son requeridos" }), {
             status: 400,
             headers: { "Content-Type": "application/json" }
         });
@@ -17,7 +17,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     const user = await getUserByEmail(email);
 
     if (!user) {
-        return new Response(JSON.stringify({ error: "Invalid email or password" }), {
+        return new Response(JSON.stringify({ error: "Email o contraseña incorrectos" }), {
             status: 401,
             headers: { "Content-Type": "application/json" }
         });
@@ -27,7 +27,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     const passwordHash = await getUserPasswordHash(user.id);
 
     if (!passwordHash) {
-        return new Response(JSON.stringify({ error: "Invalid email or password" }), {
+        return new Response(JSON.stringify({ error: "Email o contraseña incorrectos" }), {
             status: 401,
             headers: { "Content-Type": "application/json" }
         });
@@ -37,7 +37,7 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
     const validPassword = await verifyPassword(password, passwordHash);
 
     if (!validPassword) {
-        return new Response(JSON.stringify({ error: "Invalid email or password" }), {
+        return new Response(JSON.stringify({ error: "Email o contraseña incorrectos" }), {
             status: 401,
             headers: { "Content-Type": "application/json" }
         });

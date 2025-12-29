@@ -5,6 +5,16 @@ import { db, Campaign, eq, desc } from "astro:db";
 const { user } = Astro.locals;
 if (!user) return Astro.redirect("/");
 
+if (Astro.request.method === "POST") {
+    const formData = await Astro.request.formData();
+    const action = formData.get("action");
+    const id = formData.get("id");
+
+    if (action === "delete" && typeof id === "string") {
+        await db.delete(Campaign).where(eq(Campaign.id, id));
+    }
+}
+
 // Filter campaigns based on role
 let campaigns = [];
 if (user.role === "admin") {
@@ -108,6 +118,29 @@ if (user.role === "admin") {
                                         >
                                             Administrar
                                         </a>
+                                        <form
+                                            method="POST"
+                                            action="/admin/campaigns"
+                                            class="inline-block"
+                                            onsubmit="return confirm('Estas seguro que deseas eliminar el post/campaña?');"
+                                        >
+                                            <input
+                                                type="hidden"
+                                                name="action"
+                                                value="delete"
+                                            />
+                                            <input
+                                                type="hidden"
+                                                name="id"
+                                                value={campaign.id}
+                                            />
+                                            <button
+                                                type="submit"
+                                                class="text-red-400 hover:text-red-300 transition-colors"
+                                            >
+                                                Eliminar
+                                            </button>
+                                        </form>
                                     </td>
                                 </tr>
                             ))

@@ -1,0 +1,22 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import InitiativeTracker from "../../components/tools/InitiativeTracker";
+---
+
+<Layout title="Initiative Tracker - ROLPN">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="flex items-center gap-4 mb-8">
+            <a
+                href="/tools"
+                class="text-slate-400 hover:text-white transition-colors"
+            >
+                ← Back to Tools
+            </a>
+            <h1 class="text-3xl font-bold font-serif text-white">
+                Initiative Tracker
+            </h1>
+        </div>
+
+        <InitiativeTracker client:only="react" />
+    </div>
+</Layout>

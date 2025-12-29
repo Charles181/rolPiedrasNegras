@@ -69,7 +69,7 @@ export default function PostEditor({ initialData }: Props) {
                 setMessage({ type: 'error', text: error.message });
             } else {
                 const slug = 'slug' in data ? (data as any).slug : '';
-                setMessage({ type: 'success', text: initialData ? 'Post updated successfully!' : `Post created successfully! Slug: ${slug}` });
+                setMessage({ type: 'success', text: initialData ? 'Post actualizado correctamente!' : `Post creado correctamente! Slug: ${slug}` });
                 if (!initialData) {
                     setTitle('');
                     setCategory('');
