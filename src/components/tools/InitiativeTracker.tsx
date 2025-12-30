@@ -125,13 +125,13 @@ export default function InitiativeTracker() {
 
                     {/* Combat Status */}
                     <div className="bg-slate-800 p-4 rounded-lg border border-slate-700">
-                        <h3 className="text-xl font-bold mb-2 text-cyan-400">Combat Status</h3>
+                        <h3 className="text-xl font-bold mb-2 text-cyan-400">Estado del Combate</h3>
                         <div className="bg-blue-900/50 p-4 rounded-lg mb-2 text-center">
-                            <div className="text-sm text-blue-200">Round</div>
+                            <div className="text-sm text-blue-200">Ronda</div>
                             <div className="text-4xl font-bold">{round}</div>
                         </div>
                         <div>
-                            <div className="text-xs text-slate-400">Current Turn</div>
+                            <div className="text-xs text-slate-400">Turno Actual</div>
                             <div className="text-xl font-bold truncate text-yellow-400">
                                 {combatStarted && combatants[currentTurnIndex] ? combatants[currentTurnIndex].name : '-'}
                             </div>
@@ -140,11 +140,11 @@ export default function InitiativeTracker() {
 
                     {/* Add Combatant Form */}
                     <div className="bg-slate-800 p-4 rounded-lg border border-slate-700">
-                        <h3 className="text-lg font-bold mb-3 text-cyan-400">Add Combatant</h3>
+                        <h3 className="text-lg font-bold mb-3 text-cyan-400">Agregar Combatiente</h3>
                         <div className="space-y-3">
                             <input
                                 type="text"
-                                placeholder="Name"
+                                placeholder="Nombre"
                                 value={newName}
                                 onChange={(e) => setNewName(e.target.value)}
                                 className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 focus:ring-2 focus:ring-cyan-500 outline-none"
@@ -155,8 +155,8 @@ export default function InitiativeTracker() {
                                     onChange={(e: any) => setNewType(e.target.value)}
                                     className="bg-slate-900 border border-slate-600 rounded px-2 py-2 text-sm"
                                 >
-                                    <option value="player">Player</option>
-                                    <option value="creature">Creature</option>
+                                    <option value="player">Jugador</option>
+                                    <option value="creature">Criatura</option>
                                 </select>
                                 <input
                                     type="number"
@@ -177,7 +177,7 @@ export default function InitiativeTracker() {
                                 onClick={addCombatant}
                                 className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded transition-colors"
                             >
-                                Add
+                                Agregar
                             </button>
                         </div>
                     </div>
@@ -191,13 +191,13 @@ export default function InitiativeTracker() {
                                     onClick={rollAllInitiative}
                                     className="w-full bg-indigo-600 hover:bg-indigo-700 py-2 rounded font-semibold"
                                 >
-                                    Roll All Initiatives
+                                    Lanzar Iniciativas
                                 </button>
                                 <button
                                     onClick={startCombat}
                                     className="w-full bg-blue-600 hover:bg-blue-700 py-2 rounded font-semibold"
                                 >
-                                    Start Combat
+                                    Iniciar Combate
                                 </button>
                             </>
                         ) : (
@@ -205,7 +205,7 @@ export default function InitiativeTracker() {
                                 onClick={nextTurn}
                                 className="w-full bg-green-600 hover:bg-green-700 py-3 rounded font-bold text-lg shadow-lg shadow-green-900/50"
                             >
-                                Next Turn
+                                Turno Siguiente
                             </button>
                         )}
 
@@ -213,7 +213,7 @@ export default function InitiativeTracker() {
                             onClick={clearAll}
                             className="w-full bg-red-900/50 hover:bg-red-800 border border-red-800 text-red-200 py-2 rounded transition-colors"
                         >
-                            Clear All
+                            Limpiar Todo
                         </button>
                     </div>
                 </div>
@@ -229,10 +229,10 @@ export default function InitiativeTracker() {
                                 <div
                                     key={c.id}
                                     className={`relative p-4 rounded-xl border-2 transition-all duration-300 ${isCurrentTurn
-                                            ? 'border-cyan-400 bg-slate-800 shadow-[0_0_15px_rgba(34,211,238,0.3)] scale-105 z-10'
-                                            : isDead
-                                                ? 'border-red-900/50 bg-red-950/30'
-                                                : 'border-slate-700 bg-slate-800 hover:border-slate-600'
+                                        ? 'border-cyan-400 bg-slate-800 shadow-[0_0_15px_rgba(34,211,238,0.3)] scale-105 z-10'
+                                        : isDead
+                                            ? 'border-red-900/50 bg-red-950/30'
+                                            : 'border-slate-700 bg-slate-800 hover:border-slate-600'
                                         }`}
                                 >
                                     {/* Delete Button */}

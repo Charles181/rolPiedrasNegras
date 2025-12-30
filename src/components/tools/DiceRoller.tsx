@@ -27,6 +27,7 @@ export default function DiceRoller() {
     const [lastRolls, setLastRolls] = useState<DisplayRoll[]>([]);
     const [total, setTotal] = useState<number | null>(null);
     const [history, setHistory] = useState<DisplayRoll[]>([]);
+    const [quantity, setQuantity] = useState(1); // Quantity of dice to roll
 
     useEffect(() => {
         let mounted = true;
@@ -41,8 +42,7 @@ export default function DiceRoller() {
                 assetPath: '/assets/dice-box/', // Path to where we copied assets
                 container: '#dice-box-container',
                 theme: 'default',
-                scale: 20,
-                offscreen: true,
+                scale: 9,
             });
 
             await Box.init();
@@ -78,10 +78,11 @@ export default function DiceRoller() {
         };
     }, []);
 
-    const roll = (dieType: DieType) => {
+    const roll = (quantity: number, dieType: DieType) => {
         if (!boxRef.current || rolling) return;
         setRolling(true);
-        boxRef.current.roll([`1${dieType}`]);
+        if (dieType === 'd100') boxRef.current.roll([`1d100`]);
+        else boxRef.current.roll([`${quantity}${dieType}`]);
     };
 
     const clear = () => {
@@ -94,14 +95,44 @@ export default function DiceRoller() {
     return (
         <div className="w-full max-w-4xl mx-auto">
             <div className="bg-slate-900 p-6 rounded-xl border border-slate-700 shadow-xl">
-                <h3 className="text-2xl font-bold text-cyan-400 mb-6 text-center font-serif">3D Dice Roller</h3>
+                <h3 className="text-2xl font-bold text-cyan-400 mb-6 text-center font-serif">Elige el tipo de dado</h3>
+                {/* Quantity Input */}
+                <div className="flex items-center justify-center gap-3 mb-6">
+                    <label htmlFor="quantity" className="text-slate-400 font-medium">
+                        Cantidad:
+                    </label>
+                    <input
+                        id="quantity"
+                        type="number"
+                        min="1"
+                        max="10"
+                        value={quantity}
+                        onChange={(e) => setQuantity(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))}
+                        className="w-20 px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white text-center font-bold focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                    />
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                            className="w-8 h-8 bg-slate-700 hover:bg-slate-600 rounded text-white font-bold"
+                        >
+                            -
+                        </button>
+                        <button
+                            onClick={() => setQuantity(Math.min(10, quantity + 1))}
+                            className="w-8 h-8 bg-slate-700 hover:bg-slate-600 rounded text-white font-bold"
+                        >
+                            +
+                        </button>
+                    </div>
+                </div>
 
                 {/* Controls */}
                 <div className="flex flex-wrap gap-3 justify-center mb-6">
+
                     {DICE_TYPES.map((die) => (
                         <button
                             key={die.type}
-                            onClick={() => roll(die.type)}
+                            onClick={() => roll(quantity, die.type)}
                             disabled={!isReady || rolling}
                             className={`${die.color} w-16 h-16 rounded-xl shadow-lg transform transition-all duration-100 active:scale-95 hover:brightness-110 flex items-center justify-center font-bold text-xl text-white border-b-4 border-black/20 disabled:opacity-50 disabled:cursor-not-allowed`}
                         >
@@ -129,12 +160,13 @@ export default function DiceRoller() {
                     id="dice-box-container"
                     ref={containerRef}
                     className="w-full h-[400px] bg-slate-800 rounded-xl border-2 border-slate-700 overflow-hidden relative shadow-inner mb-6"
-                ></div>
+                >
+                </div>
 
                 {/* Results */}
                 {lastRolls.length > 0 && (
                     <div className="text-center mb-6 animate-[fadeIn_0.3s_ease-out]">
-                        <span className="text-slate-400 text-sm uppercase tracking-wider">Result</span>
+                        <span className="text-slate-400 text-sm uppercase tracking-wider">Resultado</span>
                         <div className="text-5xl font-bold text-white mt-2">
                             {total}
                         </div>
@@ -147,7 +179,7 @@ export default function DiceRoller() {
                 {/* History */}
                 {history.length > 0 && (
                     <div className="border-t border-slate-700 pt-4">
-                        <h4 className="text-xs text-slate-500 uppercase mb-3">Roll History</h4>
+                        <h4 className="text-xs text-slate-500 uppercase mb-3">Historial de Tiradas</h4>
                         <div className="flex flex-wrap gap-2">
                             {history.map((h, i) => (
                                 <div key={h.id} className="bg-slate-800 px-3 py-1 rounded text-sm border border-slate-600 flex gap-2 items-center">
@@ -159,6 +191,15 @@ export default function DiceRoller() {
                     </div>
                 )}
             </div>
+
+            {/* Global styles to make the canvas fill the container */}
+            <style jsx>{`
+                #dice-box-container canvas {
+                    width: 100% !important;
+                    height: 100% !important;
+                    display: block;
+                }
+            `}</style>
         </div>
     );
 }
