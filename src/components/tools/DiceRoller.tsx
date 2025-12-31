@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import DiceBox from '@3d-dice/dice-box';
+// import DisplayResults from '@3d-dice/dice-ui/src/displayResults/displayResults.js';
 
 type DieType = 'd4' | 'd6' | 'd8' | 'd10' | 'd12' | 'd20' | 'd100';
 
@@ -28,6 +29,7 @@ export default function DiceRoller() {
     const [total, setTotal] = useState<number | null>(null);
     const [history, setHistory] = useState<DisplayRoll[]>([]);
     const [quantity, setQuantity] = useState(1); // Quantity of dice to roll
+    const [themeColor, setThemeColor] = useState('#c80912');
 
     useEffect(() => {
         let mounted = true;
@@ -42,6 +44,7 @@ export default function DiceRoller() {
                 assetPath: '/assets/dice-box/', // Path to where we copied assets
                 container: '#dice-box-container',
                 theme: 'default',
+                themeColor: '#c80912', // Initial color
                 scale: 9,
             });
 
@@ -50,6 +53,9 @@ export default function DiceRoller() {
             if (mounted) {
                 boxRef.current = Box;
                 setIsReady(true);
+
+                // Initialize Display Results from dice-ui
+                //new DisplayResults("#dice-box-container");
 
                 Box.onRollComplete = (results: any) => {
                     setRolling(false);
@@ -73,10 +79,15 @@ export default function DiceRoller() {
 
         return () => {
             mounted = false;
-            // Cleanup if needed? DiceBox doesn't seem to expose destroy easily in docs, 
-            // but offscreen canvas usually handles itself.
         };
     }, []);
+
+    // Update theme color dynamically
+    useEffect(() => {
+        if (boxRef.current && isReady) {
+            boxRef.current.updateConfig({ themeColor });
+        }
+    }, [themeColor, isReady]);
 
     const roll = (quantity: number, dieType: DieType) => {
         if (!boxRef.current || rolling) return;
@@ -96,33 +107,52 @@ export default function DiceRoller() {
         <div className="w-full max-w-4xl mx-auto">
             <div className="bg-slate-900 p-6 rounded-xl border border-slate-700 shadow-xl">
                 <h3 className="text-2xl font-bold text-cyan-400 mb-6 text-center font-serif">Elige el tipo de dado</h3>
-                {/* Quantity Input */}
-                <div className="flex items-center justify-center gap-3 mb-6">
-                    <label htmlFor="quantity" className="text-slate-400 font-medium">
-                        Cantidad:
-                    </label>
-                    <input
-                        id="quantity"
-                        type="number"
-                        min="1"
-                        max="10"
-                        value={quantity}
-                        onChange={(e) => setQuantity(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))}
-                        className="w-20 px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white text-center font-bold focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                    />
-                    <div className="flex gap-2">
-                        <button
-                            onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                            className="w-8 h-8 bg-slate-700 hover:bg-slate-600 rounded text-white font-bold"
-                        >
-                            -
-                        </button>
-                        <button
-                            onClick={() => setQuantity(Math.min(10, quantity + 1))}
-                            className="w-8 h-8 bg-slate-700 hover:bg-slate-600 rounded text-white font-bold"
-                        >
-                            +
-                        </button>
+
+                <div className="flex flex-col md:flex-row items-center justify-center gap-6 mb-8">
+                    {/* Quantity Input */}
+                    <div className="flex items-center gap-3">
+                        <label htmlFor="quantity" className="text-slate-400 font-medium">
+                            Cantidad:
+                        </label>
+                        <input
+                            id="quantity"
+                            type="number"
+                            min="1"
+                            max="10"
+                            value={quantity}
+                            onChange={(e) => setQuantity(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))}
+                            className="w-16 px-2 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white text-center font-bold focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                        />
+                        <div className="flex gap-1">
+                            <button
+                                onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                                className="w-8 h-8 bg-slate-700 hover:bg-slate-600 rounded text-white font-bold"
+                            >
+                                -
+                            </button>
+                            <button
+                                onClick={() => setQuantity(Math.min(10, quantity + 1))}
+                                className="w-8 h-8 bg-slate-700 hover:bg-slate-600 rounded text-white font-bold"
+                            >
+                                +
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Color Picker */}
+                    <div className="flex items-center gap-3">
+                        <label htmlFor="color" className="text-slate-400 font-medium">
+                            Color:
+                        </label>
+                        <div className="relative overflow-hidden w-10 h-10 rounded-full border-2 border-slate-600 ring-2 ring-slate-800">
+                            <input
+                                id="color"
+                                type="color"
+                                value={themeColor}
+                                onChange={(e) => setThemeColor(e.target.value)}
+                                className="absolute -top-2 -left-2 w-16 h-16 p-0 border-0 cursor-pointer"
+                            />
+                        </div>
                     </div>
                 </div>
 
@@ -163,6 +193,7 @@ export default function DiceRoller() {
                 >
                 </div>
 
+                {/* Results - Removed manual display, dice-ui handles it */}
                 {/* Results */}
                 {lastRolls.length > 0 && (
                     <div className="text-center mb-6 animate-[fadeIn_0.3s_ease-out]">

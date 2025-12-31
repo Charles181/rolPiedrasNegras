@@ -20,3 +20,6 @@ declare namespace App {
         session: Session | null;
     }
 }
+
+declare module '@3d-dice/dice-ui*';
+declare module '@3d-dice/dice-box*';
