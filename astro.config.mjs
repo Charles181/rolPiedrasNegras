@@ -15,8 +15,10 @@ export default defineConfig({
   adapter: netlify(),
 
   vite: {
-    plugins: [tailwindVite()]
+    plugins: [tailwindVite()],
+    ssr: {
+      noExternal: ['@3d-dice/dice-ui', '@3d-dice/dice-box', '@3d-dice/dice-parser-interface', '@3d-dice/dice-roller-parser']
+    }
   },
-
   integrations: [db(), react()]
 });

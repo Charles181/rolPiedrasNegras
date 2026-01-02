@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import DiceBox from '@3d-dice/dice-box';
-// import DisplayResults from '@3d-dice/dice-ui/src/displayResults/displayResults.js';
+import DisplayResults from '@3d-dice/dice-ui/src/DisplayResults/index.js';
+//import DiceParser from "@3d-dice/dice-parser-interface/src/index.js";
 
 type DieType = 'd4' | 'd6' | 'd8' | 'd10' | 'd12' | 'd20' | 'd100';
+
 
 const DICE_TYPES: { type: DieType; label: string; color: string }[] = [
     { type: 'd4', label: 'D4', color: 'bg-red-600' },
@@ -31,6 +33,7 @@ export default function DiceRoller() {
     const [quantity, setQuantity] = useState(1); // Quantity of dice to roll
     const [themeColor, setThemeColor] = useState('#c80912');
 
+
     useEffect(() => {
         let mounted = true;
 
@@ -54,9 +57,6 @@ export default function DiceRoller() {
                 boxRef.current = Box;
                 setIsReady(true);
 
-                // Initialize Display Results from dice-ui
-                //new DisplayResults("#dice-box-container");
-
                 Box.onRollComplete = (results: any) => {
                     setRolling(false);
                     // results is an array of objects like { value: 4, type: 'd20', ... }
@@ -66,10 +66,14 @@ export default function DiceRoller() {
                         type: r.groupId || r.type // varying API depending on version
                     }));
 
+                    // Initialize Display Results from dice-ui
+                    const Display = new DisplayResults("#dice-box-container");
+                    Display.clear();
                     setLastRolls(newRolls);
                     const sum = newRolls.reduce((acc: number, curr: any) => acc + curr.value, 0);
                     setTotal(sum);
                     setHistory(prev => [...newRolls, ...prev].slice(0, 20));
+                    Display.showResults(results);
                 };
             }
         };
@@ -189,7 +193,7 @@ export default function DiceRoller() {
                 <div
                     id="dice-box-container"
                     ref={containerRef}
-                    className="w-full h-[400px] bg-slate-800 rounded-xl border-2 border-slate-700 overflow-hidden relative shadow-inner mb-6"
+                    className="w-full h-[400px] bg-[url('/images/wooden.jpg')] bg-cover rounded-xl border-2 border-slate-700 overflow-hidden relative shadow-inner mb-6"
                 >
                 </div>
 
@@ -230,6 +234,10 @@ export default function DiceRoller() {
                     height: 100% !important;
                     display: block;
                 }
+                .results {
+                    background-color: #708090;
+                    color: black;
+                }    
             `}</style>
         </div>
     );

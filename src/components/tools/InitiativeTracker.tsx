@@ -251,7 +251,7 @@ export default function InitiativeTracker() {
                                             <h4 className={`text-lg font-bold truncate px-2 ${isDead ? 'line-through text-red-400' : 'text-white'}`}>
                                                 {c.name}
                                             </h4>
-                                            {isCurrentTurn && <span className="text-[10px] uppercase tracking-wider bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded-full">Current Turn</span>}
+                                            {isCurrentTurn && <span className="text-[10px] uppercase tracking-wider bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded-full">En Turno</span>}
                                         </div>
                                     </div>
 
