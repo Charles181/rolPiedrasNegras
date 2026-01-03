@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import DiceBox from '@3d-dice/dice-box';
 import DisplayResults from '@3d-dice/dice-ui/src/DisplayResults/index.js';
-//import DiceParser from "@3d-dice/dice-parser-interface/src/index.js";
+import DiceParser from "dice-roller-parser";
 
 type DieType = 'd4' | 'd6' | 'd8' | 'd10' | 'd12' | 'd20' | 'd100';
 

@@ -27,6 +27,7 @@
     "astro": "^5.16.6",
     "bcrypt": "^6.0.0",
     "better-auth": "^1.4.7",
+    "dice-roller-parser": "^0.1.8",
     "easymde": "^2.20.0",
     "lucia": "^3.2.2",
     "marked": "^17.0.1",

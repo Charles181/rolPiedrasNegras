@@ -17,7 +17,7 @@ export default defineConfig({
   vite: {
     plugins: [tailwindVite()],
     ssr: {
-      noExternal: ['@3d-dice/dice-ui', '@3d-dice/dice-box', '@3d-dice/dice-parser-interface', '@3d-dice/dice-roller-parser']
+      noExternal: ['@3d-dice/dice-ui', '@3d-dice/dice-box', '@3d-dice/dice-parser-interface']
     }
   },
   integrations: [db(), react()]
