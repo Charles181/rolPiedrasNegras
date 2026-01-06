@@ -90,7 +90,7 @@ export default function InitiativeTracker() {
     };
 
     const updateStatus = (id: string) => {
-        const status = prompt("Enter status effect:");
+        const status = prompt("Ingrese efecto de estado:");
         if (status) {
             setCombatants(prev => prev.map(c => {
                 if (c.id === id) {
@@ -118,8 +118,9 @@ export default function InitiativeTracker() {
 
 
     return (
-        <div className="bg-slate-900 text-white p-6 rounded-xl shadow-2xl border border-slate-700">
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="relative bg-slate-900 text-white p-6 rounded-xl shadow-2xl border border-slate-700">
+            <div className="absolute inset-0 bg-[url('https://static.wixstatic.com/media/10a6a7_afe8ac94ce324c45959282e17440d415~mv2.jpg/v1/fit/w_2500,h_1330,al_c/10a6a7_afe8ac94ce324c45959282e17440d415~mv2.jpg')] bg-center bg-cover opacity-15"></div>
+            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-4 gap-6">
                 {/* Controls & Form */}
                 <div className="lg:col-span-1 space-y-6">
 
